@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Murdoku — Casos de misterio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@500;600&family=Libre+Franklin:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#151c26;
+    --navy-2:#1c2532;
+    --kraft:#d9c49a;
+    --kraft-dark:#c3a877;
+    --kraft-line:#9c7f4d;
+    --paper:#f3e9d3;
+    --paper-dark:#e6d8b8;
+    --ink:#2a2016;
+    --ink-soft:#5a4d3a;
+    --red:#b5392e;
+    --red-dark:#8f2a22;
+    --gold:#c8a24a;
+    --green:#4c7a4c;
+    --cream:#f7f1e1;
+    --shadow: 0 10px 24px rgba(0,0,0,.35);
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:
+      radial-gradient(1200px 700px at 10% -10%, #24304099, transparent 60%),
+      radial-gradient(1000px 600px at 110% 10%, #24304099, transparent 55%),
+      var(--navy);
+    color:var(--cream);
+    font-family:'Libre Franklin', sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display{ font-family:'Special Elite', monospace; letter-spacing:.5px; }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  ::selection{ background:var(--gold); color:#241a08; }
+
+  a, button{ font-family:inherit; }
+  button{ cursor:pointer; border:none; }
+
+  /* ---------------- Layout general ---------------- */
+  #app{ min-height:100vh; display:flex; flex-direction:column; }
+
+  header.topbar{
+    display:flex; align-items:center; gap:16px;
+    padding:16px 26px;
+    border-bottom:1px solid #ffffff14;
+    background:linear-gradient(180deg,#1a2330,#151c26);
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand .pin{
+    width:12px;height:12px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ff8a80, var(--red-dark));
+    box-shadow:0 2px 4px rgba(0,0,0,.5);
+  }
+  .brand h1{
+    margin:0; font-size:22px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--cream);
+  }
+  .brand small{ color:var(--gold); font-size:11px; letter-spacing:1px; text-transform:uppercase;}
+  .topbar .spacer{ flex:1; }
+  .back-btn{
+    display:flex; align-items:center; gap:8px;
+    background:transparent; color:var(--cream);
+    border:1px solid #ffffff2a; padding:8px 14px; border-radius:8px;
+    font-size:14px;
+  }
+  .back-btn:hover{ background:#ffffff10; }
+
+  main{ flex:1; padding:28px 26px 60px; max-width:1400px; margin:0 auto; width:100%; }
+
+  /* ---------------- Home: pestañas de dificultad ---------------- */
+  .tabs{ display:flex; gap:10px; margin-bottom:26px; flex-wrap:wrap; }
+  .tab{
+    background:var(--navy-2); color:var(--cream);
+    border:1px solid #ffffff1c;
+    padding:10px 18px; border-radius:999px;
+    font-size:14px; font-weight:600; letter-spacing:.5px;
+    display:flex; align-items:center; gap:8px;
+    transition:.15s ease;
+  }
+  .tab .dot{ width:8px;height:8px;border-radius:50%; }
+  .tab[data-diff="facil"] .dot{ background:#5cab5c; }
+  .tab[data-diff="medio"] .dot{ background:#d9a441; }
+  .tab[data-diff="dificil"] .dot{ background:#c9564a; }
+  .tab.active{ background:var(--gold); color:#241a08; border-color:var(--gold); }
+  .tab:hover:not(.active){ border-color:#ffffff44; }
+
+  .intro{ color:#c9c2ae; font-size:14.5px; max-width:640px; margin:0 0 22px; line-height:1.5;}
+  .intro b{ color:var(--cream); }
+
+  .grid-cases{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(230px,1fr));
+    gap:20px;
+  }
+
+  .case-card{
+    background:linear-gradient(160deg, var(--kraft), var(--kraft-dark));
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    position:relative;
+    border:1px solid var(--kraft-line);
+    transition:transform .15s ease, box-shadow .15s ease;
+    text-align:left;
+    color:var(--ink);
+  }
+  .case-card:hover{ transform:translateY(-4px); box-shadow:0 16px 30px rgba(0,0,0,.45); }
+  .case-card .preview{
+    height:130px; margin:12px 12px 0; border-radius:6px; overflow:hidden;
+    display:grid; box-shadow: inset 0 0 0 1px #00000022;
+  }
+  .case-card .preview .pc{ }
+  .case-card .body{ padding:12px 14px 16px; }
+  .case-card .badge-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  .diff-badge{
+    font-size:10px; font-weight:800; letter-spacing:.6px; text-transform:uppercase;
+    padding:3px 8px; border-radius:5px; color:#fff;
+  }
+  .diff-badge.facil{ background:#4c7a4c; }
+  .diff-badge.medio{ background:#a6791f; }
+  .diff-badge.dificil{ background:#a13a30; }
+  .case-card .meta{ font-size:11px; color:var(--ink-soft); font-weight:600;}
+  .case-card h3{
+    margin:2px 0 0; font-size:16.5px; font-family:'Special Elite', monospace;
+    color:var(--ink);
+  }
+  .solved-stamp{
+    position:absolute; top:10px; right:10px;
+    background:var(--red); color:#fff; font-size:10px; font-weight:800;
+    padding:4px 8px; border-radius:5px; transform:rotate(6deg);
+    box-shadow:0 3px 6px rgba(0,0,0,.35); letter-spacing:.5px;
+  }
+
+  /* ---------------- Pantalla de caso ---------------- */
+  #caseScreen{ display:none; }
+  .case-layout{
+    display:grid; grid-template-columns: 340px 1fr 190px; gap:22px; align-items:start;
+  }
+  @media (max-width:1000px){ .case-layout{ grid-template-columns:1fr; } }
+
+  .panel{
+    background:var(--navy-2); border:1px solid #ffffff14; border-radius:var(--radius);
+    padding:16px; box-shadow:var(--shadow);
+  }
+  .panel h2{ margin:0 0 10px; font-size:13px; letter-spacing:1px; text-transform:uppercase; color:var(--gold); }
+
+  .case-title{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; gap:10px; flex-wrap:wrap;}
+  .case-title h2{ margin:0; font-family:'Special Elite',monospace; font-size:20px; color:var(--cream); letter-spacing:.5px; text-transform:none;}
+  .case-timer{ font-size:13px; color:#c9c2ae; }
+
+  .general-clue{
+    background:#241d13; border:1px solid #ffffff1a; color:var(--paper);
+    padding:9px 11px; border-radius:8px; font-size:13px; margin-bottom:8px; line-height:1.4;
+  }
+  .general-clue b{ color:var(--gold); }
+
+  .suspects-list{ display:flex; flex-direction:column; gap:8px; margin-top:6px; }
+  .suspect-card{
+    display:flex; gap:10px; align-items:flex-start;
+    background:#20293650; border:1px solid #ffffff14; border-radius:9px;
+    padding:8px 10px; transition:.12s ease;
+  }
+  .suspect-card:hover{ border-color:#ffffff33; }
+  .suspect-card.selected{ border-color:var(--gold); background:#c8a24a1c; box-shadow:0 0 0 1px var(--gold) inset; }
+  .suspect-card.correct{ border-color:var(--green); box-shadow:0 0 0 1px var(--green) inset; }
+  .suspect-card.wrong{ border-color:var(--red); box-shadow:0 0 0 1px var(--red) inset; }
+  .avatar{
+    width:34px; height:34px; border-radius:50%; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:800; font-size:14px; font-family:'IBM Plex Mono',monospace;
+    box-shadow:0 2px 5px rgba(0,0,0,.35);
+    border:2px solid rgba(255,255,255,.35);
+  }
+  .sc-body{ flex:1; min-width:0; }
+  .sc-name-row{ display:flex; align-items:center; gap:6px; }
+  .sc-name{ font-weight:700; font-size:14px; color:var(--cream); }
+  .sc-gender{ font-size:11px; color:#a9a196; }
+  .sc-clues{ margin-top:2px; font-size:12.5px; color:#c9c2ae; line-height:1.45; }
+  .sc-clues span{ display:block; }
+  .sc-status{ font-size:16px; margin-left:auto; flex:none; }
+
+  /* ---------------- Grilla del caso ---------------- */
+  .board-wrap{ display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .board{
+    display:grid; background:#000; border-radius:8px; overflow:hidden;
+    box-shadow:var(--shadow); border:3px solid #10151d;
+    touch-action:none;
+  }
+  .cell{
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+    user-select:none; -webkit-user-select:none;
+    border-right:1px solid rgba(0,0,0,.12);
+    border-bottom:1px solid rgba(0,0,0,.12);
+    cursor:pointer;
+  }
+  .cell .obj-emoji{ font-size:60%; pointer-events:none; filter:drop-shadow(0 1px 1px rgba(0,0,0,.35)); }
+  .cell .zone-label{
+    position:absolute; left:3px; bottom:2px; font-size:8.5px; font-weight:800;
+    letter-spacing:.4px; color:#2a2016cc; text-transform:uppercase; pointer-events:none;
+    text-shadow:0 1px 0 rgba(255,255,255,.35);
+  }
+  .cell .notes{
+    position:absolute; top:2px; left:2px; display:flex; gap:2px; flex-wrap:wrap;
+    max-width:80%; pointer-events:none;
+  }
+  .cell .note-chip{
+    width:15px; height:15px; border-radius:50%; font-size:8px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; color:#fff;
+    border:1px solid rgba(255,255,255,.5); font-family:'IBM Plex Mono',monospace;
+  }
+  .cell .placed-avatar{
+    width:78%; height:78%; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:800; font-family:'IBM Plex Mono',monospace;
+    box-shadow:0 3px 6px rgba(0,0,0,.4); border:2px solid rgba(255,255,255,.55);
+    pointer-events:none; transition:transform .12s ease;
+  }
+  .cell.pressing .placed-avatar, .cell.pressing::after{ transform:scale(1.05); }
+  .cell.result-correct .placed-avatar{ outline:3px solid var(--green); outline-offset:1px; }
+  .cell.result-wrong .placed-avatar{ outline:3px solid var(--red); outline-offset:1px; }
+  .cell .press-ring{
+    position:absolute; inset:8%; border-radius:50%;
+    border:3px solid var(--gold); opacity:0; transform:scale(.6);
+    pointer-events:none;
+  }
+  .cell.charging .press-ring{ opacity:1; transform:scale(1); transition:transform .45s linear; }
+
+  /* ---------------- Herramientas ---------------- */
+  .tools h2{ margin-bottom:12px; }
+  .tool-btn{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:#20293650; color:var(--cream); border:1px solid #ffffff1c;
+    padding:10px; border-radius:8px; font-size:13px; font-weight:600; margin-bottom:10px;
+  }
+  .tool-btn:hover{ border-color:#ffffff44; }
+  .tool-btn.active{ background:var(--gold); color:#241a08; border-color:var(--gold); }
+  .tool-btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .tool-btn.submit{ background:var(--red); border-color:var(--red); color:#fff; margin-top:14px; }
+  .tool-btn.submit:hover{ background:var(--red-dark); }
+  .tool-hint{ font-size:11px; color:#8f8877; line-height:1.5; margin-top:6px; }
+
+  .result-banner{
+    margin-top:12px; padding:10px 12px; border-radius:8px; font-size:13px; font-weight:700;
+    text-align:center; display:none;
+  }
+  .result-banner.show{ display:block; }
+  .result-banner.win{ background:#20361f; color:#8fd18f; border:1px solid #3f6b3f; }
+  .result-banner.lose{ background:#3a1f1c; color:#e29b93; border:1px solid #6b3f38; }
+
+  /* ---------------- Modal ---------------- */
+  .modal-bg{
+    position:fixed; inset:0; background:#00000090; display:none;
+    align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .modal-bg.show{ display:flex; }
+  .modal{
+    background:var(--paper); color:var(--ink); border-radius:12px; max-width:440px; width:100%;
+    padding:22px 24px; box-shadow:var(--shadow);
+  }
+  .modal h3{ margin:0 0 10px; font-family:'Special Elite',monospace; }
+  .modal p{ font-size:14px; line-height:1.55; margin:0 0 10px; }
+  .modal button{
+    margin-top:8px; background:var(--red); color:#fff; padding:9px 16px; border-radius:8px; font-weight:700;
+  }
+
+  footer{ text-align:center; color:#6b6455; font-size:11.5px; padding:18px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="pin"></span>
+      <div>
+        <h1>Murdoku</h1>
+      </div>
+      <small>casos de misterio</small>
+    </div>
+    <div class="spacer"></div>
+    <button class="back-btn" id="backBtn" style="display:none;">← Volver a los casos</button>
+  </header>
+
+  <main>
+    <!-- ============ PANTALLA DE INICIO ============ -->
+    <section id="homeScreen">
+      <p class="intro">Elegí una dificultad y abrí un caso. Cada escena tiene sospechosos con pistas
+        sobre dónde estaban parados: <b>tocá una casilla</b> para anotar una marca, y <b>mantené presionado</b>
+        para colocar al sospechoso ahí de verdad.</p>
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-diff="facil"><span class="dot"></span>Fácil</button>
+        <button class="tab" data-diff="medio"><span class="dot"></span>Medio</button>
+        <button class="tab" data-diff="dificil"><span class="dot"></span>Difícil</button>
+      </div>
+      <div class="grid-cases" id="caseGrid"></div>
+    </section>
+
+    <!-- ============ PANTALLA DE CASO ============ -->
+    <section id="caseScreen">
+      <div class="case-layout">
+        <!-- Sospechosos -->
+        <div class="panel">
+          <div class="case-title">
+            <h2 id="caseTitle">—</h2>
+            <span class="case-timer mono" id="caseTimer">0:00</span>
+          </div>
+          <div id="generalClues"></div>
+          <h2 style="margin-top:14px;">Sospechosos <span class="mono" style="color:#8f8877; text-transform:none; letter-spacing:0;">(clic para seleccionar)</span></h2>
+          <div class="suspects-list" id="suspectsList"></div>
+        </div>
+
+        <!-- Tablero -->
+        <div class="board-wrap">
+          <div class="board" id="board"></div>
+        </div>
+
+        <!-- Herramientas -->
+        <div class="panel tools">
+          <h2>Herramientas</h2>
+          <button class="tool-btn" id="deselectBtn">✕ Deseleccionar</button>
+          <button class="tool-btn" id="eraseBtn">🧹 Borrador</button>
+          <button class="tool-btn" id="undoBtn">↩ Deshacer</button>
+          <button class="tool-btn" id="clearAllBtn">🗑 Borrar todo</button>
+          <div class="tool-hint">Clic en una casilla: anota una marca del sospechoso elegido.<br><br>Mantené presionado: coloca al sospechoso ahí en firme.</div>
+          <button class="tool-btn submit" id="submitBtn">Enviar (coloca a todos primero)</button>
+          <div class="result-banner" id="resultBanner"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>Murdoku — un tablero de misterio hecho a mano.</footer>
+</div>
+
+<div class="modal-bg" id="lockedModal">
+  <div class="modal">
+    <h3>Colocá a todos primero</h3>
+    <p>Antes de enviar, mantené presionada una casilla para colocar en firme a <b>cada</b> sospechoso de la lista. Las marcas sueltas (clic corto) no cuentan como colocación.</p>
+    <button id="lockedOk">Entendido</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   MURDOKU — Motor de generación de casos
+   Genera de forma determinista (por semilla) la sala, los objetos, los
+   sospechosos y las pistas de cada caso. Todo es puro JS, sin dependencias.
+   ========================================================================= */
+
+/* ---------- PRNG determinista (para que cada caso sea siempre igual) --- */
+function makeRng(seedStr) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    h ^= seedStr.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return function rng() {
+    h += 0x6D2B79F5;
+    let t = Math.imul(h ^ (h >>> 15), 1 | h);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const ri = (rng, n) => Math.floor(rng() * n);
+const pick = (rng, arr) => arr[ri(rng, arr.length)];
+function shuffle(rng, arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = ri(rng, i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const sample = (rng, arr, n) => shuffle(rng, arr).slice(0, n);
+
+/* --------------------------- Datos de sabor ----------------------------- */
+const SUSPECT_NAMES = [
+  { name: 'Albert', g: 'm' }, { name: 'Burma', g: 'f' }, { name: 'Craig', g: 'm' },
+  { name: 'Duncan', g: 'm' }, { name: 'Elyana', g: 'f' }, { name: 'Faith', g: 'f' },
+  { name: 'Ginny', g: 'f' }, { name: 'Hugo', g: 'm' }, { name: 'Idril', g: 'f' },
+  { name: 'Valeria', g: 'f' }, { name: 'Marco', g: 'm' }, { name: 'Nadia', g: 'f' },
+  { name: 'Oscar', g: 'm' }, { name: 'Priya', g: 'f' }, { name: 'Quinn', g: 'f' },
+  { name: 'Rosa', g: 'f' }, { name: 'Simón', g: 'm' }, { name: 'Tessa', g: 'f' },
+  { name: 'Umberto', g: 'm' }, { name: 'Wendy', g: 'f' }, { name: 'Xavier', g: 'm' },
+  { name: 'Yara', g: 'f' }, { name: 'Zoe', g: 'f' }, { name: 'Beto', g: 'm' },
+  { name: 'Carla', g: 'f' }, { name: 'Diego', g: 'm' }, { name: 'Elena', g: 'f' },
+  { name: 'Franco', g: 'm' }, { name: 'Greta', g: 'f' }, { name: 'Iván', g: 'm' },
+];
+
+const SUSPECT_COLORS = [
+  '#d1495b', '#3f7cac', '#4f9d5b', '#d9a441', '#8b5fbf',
+  '#2e9599', '#c46bb0', '#a3743f', '#5a67c7', '#8a8a2e',
+];
+
+/* Cada set decorativo define: paleta de terrenos, objetos con artículo/nombre
+   en español, y nombres de zona posibles. Se reutilizan entre casos. */
+const DECOR_SETS = [
+  { // Jardín / exterior
+    terrains: [
+      { key: 'pasto', name: 'pasto', base: '#8fbf6e', alt: '#7fae5f' },
+      { key: 'arena', name: 'arena', base: '#e3d19a', alt: '#d6c184' },
+      { key: 'agua', name: 'agua', base: '#8ed2d9', alt: '#7cc3cb' },
+    ],
+    objects: [
+      { key: 'cactus', name: 'cactus', art: 'un', emoji: '🌵' },
+      { key: 'bandera', name: 'bandera', art: 'una', emoji: '🚩' },
+      { key: 'barril', name: 'barril', art: 'un', emoji: '🛢️' },
+      { key: 'flores', name: 'flores', art: 'unas', emoji: '🌼' },
+      { key: 'banca', name: 'banca', art: 'una', emoji: '🪑' },
+      { key: 'planta', name: 'planta', art: 'una', emoji: '🪴' },
+    ],
+    zoneNames: ['EL JARDÍN', 'EL SENDERO', 'LA FUENTE', 'LA ENTRADA'],
+  },
+  { // Cocina
+    terrains: [
+      { key: 'baldosa', name: 'baldosa', base: '#e7dcc4', alt: '#dccdad' },
+      { key: 'madera', name: 'piso de madera', base: '#cba36c', alt: '#bd935c' },
+    ],
+    objects: [
+      { key: 'sarten', name: 'sartén', art: 'una', emoji: '🍳' },
+      { key: 'cuchillo', name: 'cuchillo', art: 'un', emoji: '🔪' },
+      { key: 'olla', name: 'olla', art: 'una', emoji: '🥘' },
+      { key: 'especiero', name: 'especiero', art: 'un', emoji: '🧂' },
+      { key: 'silla', name: 'silla', art: 'una', emoji: '🪑' },
+      { key: 'jarra', name: 'jarra', art: 'una', emoji: '🫖' },
+    ],
+    zoneNames: ['LA DESPENSA', 'LOS FOGONES', 'LA BARRA', 'LA ENTRADA'],
+  },
+  { // Biblioteca
+    terrains: [
+      { key: 'alfombra', name: 'alfombra', base: '#b9a2c9', alt: '#ac93bd' },
+      { key: 'parquet', name: 'parquet', base: '#c9ad83', alt: '#bc9e72' },
+    ],
+    objects: [
+      { key: 'libro', name: 'libro', art: 'un', emoji: '📚' },
+      { key: 'vela', name: 'vela', art: 'una', emoji: '🕯️' },
+      { key: 'globo', name: 'globo terráqueo', art: 'un', emoji: '🌐' },
+      { key: 'sillon', name: 'sillón', art: 'un', emoji: '🛋️' },
+      { key: 'lampara', name: 'lámpara', art: 'una', emoji: '💡' },
+    ],
+    zoneNames: ['LOS ESTANTES', 'LA SALA DE LECTURA', 'EL ARCHIVO', 'LA ENTRADA'],
+  },
+  { // Barco
+    terrains: [
+      { key: 'cubierta', name: 'cubierta', base: '#c9b28a', alt: '#bba077' },
+      { key: 'agua', name: 'agua', base: '#7fb8c9', alt: '#6fa7b8' },
+    ],
+    objects: [
+      { key: 'ancla', name: 'ancla', art: 'un', emoji: '⚓' },
+      { key: 'timon', name: 'timón', art: 'un', emoji: '🧭' },
+      { key: 'soga', name: 'soga', art: 'una', emoji: '🪢' },
+      { key: 'salvavidas', name: 'salvavidas', art: 'un', emoji: '🛟' },
+      { key: 'barril', name: 'barril', art: 'un', emoji: '🛢️' },
+    ],
+    zoneNames: ['LA PROA', 'LA CUBIERTA', 'EL PUENTE', 'LA POPA'],
+  },
+  { // Museo / mansión
+    terrains: [
+      { key: 'marmol', name: 'mármol', base: '#dcd6c8', alt: '#cfc8b8' },
+      { key: 'alfombra', name: 'alfombra roja', base: '#c9707a', alt: '#bc636d' },
+    ],
+    objects: [
+      { key: 'cuadro', name: 'cuadro', art: 'un', emoji: '🖼️' },
+      { key: 'estatua', name: 'estatua', art: 'una', emoji: '🗿' },
+      { key: 'vela', name: 'candelabro', art: 'un', emoji: '🕯️' },
+      { key: 'jarron', name: 'jarrón', art: 'un', emoji: '🏺' },
+      { key: 'sillon', name: 'sillón', art: 'un', emoji: '🛋️' },
+    ],
+    zoneNames: ['LA GALERÍA', 'EL SALÓN', 'EL VESTÍBULO', 'LA ENTRADA'],
+  },
+  { // Invernadero / bosque
+    terrains: [
+      { key: 'pasto', name: 'pasto', base: '#7fae5f', alt: '#6fa050' },
+      { key: 'tierra', name: 'tierra', base: '#b58a5c', alt: '#a67c4f' },
+    ],
+    objects: [
+      { key: 'arbol', name: 'árbol', art: 'un', emoji: '🌳' },
+      { key: 'seta', name: 'seta', art: 'una', emoji: '🍄' },
+      { key: 'regadera', name: 'regadera', art: 'una', emoji: '🚿' },
+      { key: 'maceta', name: 'maceta', art: 'una', emoji: '🪴' },
+      { key: 'banca', name: 'banca', art: 'una', emoji: '🪑' },
+    ],
+    zoneNames: ['EL VIVERO', 'EL SENDERO', 'LA GLORIETA', 'LA ENTRADA'],
+  },
+  { // Circo / feria
+    terrains: [
+      { key: 'aserrin', name: 'aserrín', base: '#e0c483', alt: '#d3b672' },
+      { key: 'alfombra', name: 'alfombra a rayas', base: '#d67a7a', alt: '#c96c6c' },
+    ],
+    objects: [
+      { key: 'globo', name: 'globo', art: 'un', emoji: '🎈' },
+      { key: 'trompeta', name: 'trompeta', art: 'una', emoji: '🎺' },
+      { key: 'palomitas', name: 'carrito de palomitas', art: 'un', emoji: '🍿' },
+      { key: 'silla', name: 'silla', art: 'una', emoji: '🪑' },
+      { key: 'baul', name: 'baúl', art: 'un', emoji: '🧳' },
+    ],
+    zoneNames: ['LA CARPA', 'LAS GRADAS', 'EL PASILLO', 'LA ENTRADA'],
+  },
+  { // Torre / observatorio
+    terrains: [
+      { key: 'piedra', name: 'piedra', base: '#b7b7b0', alt: '#a9a9a2' },
+      { key: 'madera', name: 'piso de madera', base: '#c2996a', alt: '#b48a5b' },
+    ],
+    objects: [
+      { key: 'telescopio', name: 'telescopio', art: 'un', emoji: '🔭' },
+      { key: 'reloj', name: 'reloj', art: 'un', emoji: '🕰️' },
+      { key: 'libro', name: 'libro', art: 'un', emoji: '📖' },
+      { key: 'vela', name: 'vela', art: 'una', emoji: '🕯️' },
+      { key: 'mapa', name: 'mapa', art: 'un', emoji: '🗺️' },
+    ],
+    zoneNames: ['EL MIRADOR', 'LA ESCALERA', 'EL ESTUDIO', 'LA ENTRADA'],
+  },
+  { // Minigolf (como el de referencia)
+    terrains: [
+      { key: 'pasto', name: 'pasto', base: '#8fbf6e', alt: '#7fae5f' },
+      { key: 'arena', name: 'arena', base: '#e3d19a', alt: '#d6c184' },
+      { key: 'agua', name: 'agua', base: '#8ed2d9', alt: '#7cc3cb' },
+      { key: 'baldosa', name: 'baldosa', base: '#dcd0b6', alt: '#cfc2a5' },
+    ],
+    objects: [
+      { key: 'cactus', name: 'cactus', art: 'un', emoji: '🌵' },
+      { key: 'bandera', name: 'bandera', art: 'una', emoji: '🚩' },
+      { key: 'barril', name: 'barril', art: 'un', emoji: '🛢️' },
+      { key: 'flores', name: 'flores', art: 'unas', emoji: '🌼' },
+      { key: 'banca', name: 'banca', art: 'una', emoji: '🪑' },
+      { key: 'planta', name: 'planta', art: 'una', emoji: '🪴' },
+      { key: 'silla', name: 'silla', art: 'una', emoji: '🪑' },
+    ],
+    zoneNames: ['EL DESIERTO', 'LOS BARRILES', 'LA ISLA', 'LA ENTRADA'],
+  },
+];
+
+/* ------------------------ Lista de 27 casos ----------------------------- */
+const CASE_DEFS = [
+  // Fáciles — 9x9, 9 sospechosos, pistas generosas
+  { id: 'f1', diff: 'facil', name: 'La Cabaña del Lago', decor: 3 },
+  { id: 'f2', diff: 'facil', name: 'El Café Central', decor: 1 },
+  { id: 'f3', diff: 'facil', name: 'La Biblioteca Vieja', decor: 2 },
+  { id: 'f4', diff: 'facil', name: 'El Jardín Botánico', decor: 0 },
+  { id: 'f5', diff: 'facil', name: 'La Panadería', decor: 1 },
+  { id: 'f6', diff: 'facil', name: 'El Invernadero', decor: 5 },
+  { id: 'f7', diff: 'facil', name: 'La Sala de Té', decor: 2 },
+  { id: 'f8', diff: 'facil', name: 'El Mercado', decor: 0 },
+  { id: 'f9', diff: 'facil', name: 'La Feria de Verano', decor: 6 },
+  // Medios — 9x9, 9 sospechosos, pistas más ambiguas
+  { id: 'm1', diff: 'medio', name: 'El Museo Nocturno', decor: 4 },
+  { id: 'm2', diff: 'medio', name: 'La Estación de Tren', decor: 7 },
+  { id: 'm3', diff: 'medio', name: 'El Faro', decor: 3 },
+  { id: 'm4', diff: 'medio', name: 'La Bodega de Vinos', decor: 1 },
+  { id: 'm5', diff: 'medio', name: 'El Teatro Abandonado', decor: 4 },
+  { id: 'm6', diff: 'medio', name: 'La Mansión Grey', decor: 4 },
+  { id: 'm7', diff: 'medio', name: 'El Barco Fantasma', decor: 3 },
+  { id: 'm8', diff: 'medio', name: 'La Feria Abandonada', decor: 6 },
+  { id: 'm9', diff: 'medio', name: 'El Observatorio', decor: 7 },
+  // Difíciles — 10x10, 10 sospechosos, pistas mínimas
+  { id: 'd1', diff: 'dificil', name: 'El Minigolf', decor: 8 },
+  { id: 'd2', diff: 'dificil', name: 'El Casino Rojo', decor: 4 },
+  { id: 'd3', diff: 'dificil', name: 'La Torre del Reloj', decor: 7 },
+  { id: 'd4', diff: 'dificil', name: 'El Laberinto de Setos', decor: 5 },
+  { id: 'd5', diff: 'dificil', name: 'El Crucero Estelar', decor: 3 },
+  { id: 'd6', diff: 'dificil', name: 'La Cripta Olvidada', decor: 2 },
+  { id: 'd7', diff: 'dificil', name: 'El Circo Nocturno', decor: 6 },
+  { id: 'd8', diff: 'dificil', name: 'La Estación Polar', decor: 7 },
+  { id: 'd9', diff: 'dificil', name: 'El Palacio de Cristal', decor: 4 },
+];
+
+const DIFF_CONFIG = {
+  facil: { size: 9, suspects: 9, clues: 2, generalClues: 2 },
+  medio: { size: 9, suspects: 9, clues: 2, generalClues: 1 },
+  dificil: { size: 10, suspects: 10, clues: 1, generalClues: 1 },
+};
+
+/* --------------------------- Generación de sala -------------------------- */
+function splitRegions(rng, x0, y0, x1, y1, depth) {
+  const w = x1 - x0, h = y1 - y0;
+  if (depth <= 0 || (w < 3 && h < 3) || (w < 2 || h < 2)) return [{ x0, y0, x1, y1 }];
+  const vertical = w >= h;
+  if (vertical) {
+    if (w < 3) return [{ x0, y0, x1, y1 }];
+    const cut = x0 + 1 + ri(rng, Math.max(1, w - 2));
+    return [
+      ...splitRegions(rng, x0, y0, cut, y1, depth - 1),
+      ...splitRegions(rng, cut, y0, x1, y1, depth - 1),
+    ];
+  } else {
+    if (h < 3) return [{ x0, y0, x1, y1 }];
+    const cut = y0 + 1 + ri(rng, Math.max(1, h - 2));
+    return [
+      ...splitRegions(rng, x0, y0, x1, cut, depth - 1),
+      ...splitRegions(rng, x0, cut, x1, y1, depth - 1),
+    ];
+  }
+}
+
+function neighbors8(idx, size) {
+  const row = Math.floor(idx / size), col = idx % size;
+  const out = [];
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      if (dr === 0 && dc === 0) continue;
+      const r = row + dr, c = col + dc;
+      if (r >= 0 && r < size && c >= 0 && c < size) out.push(r * size + c);
+    }
+  }
+  return out;
+}
+
+function generateCase(def) {
+  const cfg = DIFF_CONFIG[def.diff];
+  const size = cfg.size;
+  const rng = makeRng('murdoku-' + def.id);
+  const decor = DECOR_SETS[def.decor];
+
+  // 1) Regiones / zonas
+  const depth = 2;
+  let regions = splitRegions(rng, 0, 0, size, size, depth);
+  regions = regions.filter(r => r.x1 > r.x0 && r.y1 > r.y0);
+  const zoneNames = shuffle(rng, decor.zoneNames);
+  regions.forEach((r, i) => {
+    r.terrain = decor.terrains[i % decor.terrains.length];
+    r.zoneName = zoneNames[i % zoneNames.length];
+  });
+
+  // 2) Grilla base
+  const grid = new Array(size * size);
+  for (const r of regions) {
+    for (let y = r.y0; y < r.y1; y++) {
+      for (let x = r.x0; x < r.x1; x++) {
+        const idx = y * size + x;
+        const shade = (x + y) % 2 === 0 ? r.terrain.base : r.terrain.alt;
+        grid[idx] = {
+          terrainKey: r.terrain.key,
+          terrainName: r.terrain.name,
+          color: shade,
+          zoneName: r.zoneName,
+          object: null,
+          labelCell: false,
+        };
+      }
+    }
+    // marca la celda superior-izquierda de cada región para el rótulo de zona
+    const labelIdx = r.y0 * size + r.x0;
+    if (grid[labelIdx]) grid[labelIdx].labelCell = true;
+  }
+
+  // 3) Objetos decorativos dispersos
+  const totalCells = size * size;
+  const objCount = Math.round(totalCells * 0.11);
+  const objCells = sample(rng, [...Array(totalCells).keys()], objCount);
+  objCells.forEach((idx, i) => {
+    grid[idx].object = decor.objects[i % decor.objects.length];
+  });
+
+  // 4) Sospechosos
+  const freeCells = [...Array(totalCells).keys()].filter(i => !grid[i].object);
+  const suspectCells = sample(rng, freeCells, cfg.suspects);
+  const names = sample(rng, SUSPECT_NAMES, cfg.suspects);
+  const suspects = suspectCells.map((cell, i) => ({
+    id: 's' + i,
+    name: names[i].name,
+    g: names[i].g,
+    color: SUSPECT_COLORS[i % SUSPECT_COLORS.length],
+    initial: names[i].name[0],
+    cell,
+    clues: [],
+  }));
+
+  // 5) Pistas individuales
+  suspects.forEach(sus => {
+    const idx = sus.cell;
+    const row = Math.floor(idx / size), col = idx % size;
+    const facts = [];
+
+    const adjObjIdxs = neighbors8(idx, size).filter(n => grid[n].object);
+    if (adjObjIdxs.length) {
+      const obj = grid[adjObjIdxs[0]].object;
+      facts.push({ w: 3, t: `Estaba junto a ${obj.art} ${obj.name}.` });
+    }
+    if (row === 0) facts.push({ w: 2, t: 'Estaba en la fila superior.' });
+    if (row === size - 1) facts.push({ w: 2, t: 'Estaba en la fila inferior.' });
+    if (col === 0) facts.push({ w: 2, t: 'Estaba en la columna izquierda.' });
+    if (col === size - 1) facts.push({ w: 2, t: 'Estaba en la columna derecha.' });
+
+    const corner = (row === 0 || row === size - 1) && (col === 0 || col === size - 1);
+    facts.push(corner
+      ? { w: 3, t: 'Estaba en una esquina.' }
+      : { w: 1, t: 'No estaba en una esquina.' });
+
+    const neighborSuspects = neighbors8(idx, size).filter(n => suspects.some(s => s.cell === n));
+    facts.push(neighborSuspects.length === 0
+      ? { w: 2, t: sus.g === 'f' ? 'Estaba sola.' : 'Estaba solo.' }
+      : { w: 1, t: 'Estaba junto a alguien.' });
+
+    facts.push({ w: 2, t: `Estaba en ${grid[idx].zoneName}.` });
+
+    const sameTerrainCount = suspects.filter(s => grid[s.cell].terrainKey === grid[idx].terrainKey).length;
+    if (sameTerrainCount === 1) {
+      facts.push({ w: 3, t: `Era la única persona en una casilla de ${grid[idx].terrainName}.` });
+    }
+
+    const others = suspects.filter(s => s.id !== sus.id);
+    if (others.length) {
+      const other = pick(rng, others);
+      const oRow = Math.floor(other.cell / size);
+      const rowDiff = row - oRow;
+      if (Math.abs(rowDiff) >= 1 && Math.abs(rowDiff) <= 3) {
+        const dir = rowDiff > 0 ? 'sur' : 'norte';
+        const n = Math.abs(rowDiff);
+        facts.push({ w: 4, t: `Estaba exactamente ${n} fila${n > 1 ? 's' : ''} al ${dir} de ${other.name}.` });
+      }
+    }
+
+    const chosen = shuffle(rng, facts.sort((a, b) => b.w - a.w).slice(0, Math.max(3, cfg.clues + 2)))
+      .sort((a, b) => b.w - a.w)
+      .slice(0, cfg.clues);
+    sus.clues = chosen.length ? chosen.map(f => f.t) : [`Estaba en ${grid[idx].zoneName}.`];
+  });
+
+  // 6) Pistas generales (basadas en objetos con exactamente 1 sospechoso adyacente)
+  const objTypesPresent = [...new Set(grid.filter(c => c.object).map(c => c.object.key))];
+  const generalCandidates = [];
+  objTypesPresent.forEach(key => {
+    const objIdxs = grid.map((c, i) => (c.object && c.object.key === key ? i : -1)).filter(i => i >= 0);
+    const nearSuspects = new Set();
+    objIdxs.forEach(oi => {
+      neighbors8(oi, size).forEach(n => {
+        if (suspects.some(s => s.cell === n)) nearSuspects.add(n);
+      });
+    });
+    if (nearSuspects.size === 1) {
+      const objMeta = grid.find(c => c.object && c.object.key === key).object;
+      generalCandidates.push(`Había exactamente una persona junto a ${objMeta.art} ${objMeta.name}.`);
+    }
+  });
+  const generalClues = sample(rng, generalCandidates, Math.min(cfg.generalClues, generalCandidates.length));
+
+  return {
+    id: def.id,
+    diff: def.diff,
+    name: def.name,
+    size,
+    grid,
+    suspects,
+    generalClues,
+  };
+}
+
+function buildAllCases() {
+  const map = {};
+  CASE_DEFS.forEach(def => { map[def.id] = generateCase(def); });
+  return map;
+}
+
+const MURDOKU_CASES = buildAllCases();
+const MURDOKU_CASE_DEFS = CASE_DEFS;
+
+</script>
+<script>
+/* =========================================================================
+   MURDOKU — Interfaz e interacción
+   ========================================================================= */
+(function () {
+  const homeScreen = document.getElementById('homeScreen');
+  const caseScreen = document.getElementById('caseScreen');
+  const backBtn = document.getElementById('backBtn');
+  const tabs = document.getElementById('tabs');
+  const caseGrid = document.getElementById('caseGrid');
+
+  const caseTitle = document.getElementById('caseTitle');
+  const caseTimer = document.getElementById('caseTimer');
+  const generalCluesEl = document.getElementById('generalClues');
+  const suspectsListEl = document.getElementById('suspectsList');
+  const boardEl = document.getElementById('board');
+  const deselectBtn = document.getElementById('deselectBtn');
+  const eraseBtn = document.getElementById('eraseBtn');
+  const undoBtn = document.getElementById('undoBtn');
+  const clearAllBtn = document.getElementById('clearAllBtn');
+  const submitBtn = document.getElementById('submitBtn');
+  const resultBanner = document.getElementById('resultBanner');
+  const lockedModal = document.getElementById('lockedModal');
+  const lockedOk = document.getElementById('lockedOk');
+
+  let currentDiff = 'facil';
+  const solvedIds = new Set(); // resueltos en esta sesión
+
+  /* ------------------------- PANTALLA DE INICIO ------------------------- */
+  function renderCaseGrid() {
+    caseGrid.innerHTML = '';
+    const defs = MURDOKU_CASE_DEFS.filter(d => d.diff === currentDiff);
+    defs.forEach(def => {
+      const c = MURDOKU_CASES[def.id];
+      const card = document.createElement('button');
+      card.className = 'case-card';
+      card.style.border = 'none';
+      card.style.cursor = 'pointer';
+
+      const preview = document.createElement('div');
+      preview.className = 'preview';
+      preview.style.gridTemplateColumns = `repeat(${c.size}, 1fr)`;
+      c.grid.forEach(cell => {
+        const pc = document.createElement('div');
+        pc.className = 'pc';
+        pc.style.background = cell.color;
+        if (cell.object) {
+          pc.style.display = 'flex';
+          pc.style.alignItems = 'center';
+          pc.style.justifyContent = 'center';
+          pc.style.fontSize = '7px';
+          pc.textContent = cell.object.emoji;
+        }
+        preview.appendChild(pc);
+      });
+
+      const body = document.createElement('div');
+      body.className = 'body';
+      body.innerHTML = `
+        <div class="badge-row">
+          <span class="diff-badge ${def.diff}">${labelForDiff(def.diff)}</span>
+          <span class="meta">${c.size}×${c.size} · ${c.suspects.length} sospechosos</span>
+        </div>
+        <h3>${c.name}</h3>
+      `;
+
+      card.appendChild(preview);
+      card.appendChild(body);
+      if (solvedIds.has(def.id)) {
+        const stamp = document.createElement('div');
+        stamp.className = 'solved-stamp';
+        stamp.textContent = 'RESUELTO';
+        card.appendChild(stamp);
+      }
+      card.addEventListener('click', () => openCase(def.id));
+      caseGrid.appendChild(card);
+    });
+  }
+
+  function labelForDiff(d) {
+    return d === 'facil' ? 'Fácil' : d === 'medio' ? 'Medio' : 'Difícil';
+  }
+
+  tabs.addEventListener('click', e => {
+    const btn = e.target.closest('.tab');
+    if (!btn) return;
+    currentDiff = btn.dataset.diff;
+    [...tabs.children].forEach(t => t.classList.toggle('active', t === btn));
+    renderCaseGrid();
+  });
+
+  /* ------------------------------ CASO ---------------------------------- */
+  let active = null; // estado del caso abierto
+  let timerHandle = null;
+
+  function openCase(id) {
+    const c = MURDOKU_CASES[id];
+    active = {
+      case: c,
+      selectedSuspect: null,
+      eraseMode: false,
+      notes: new Map(),       // cellIdx -> Set(suspectId)
+      placements: new Map(),  // suspectId -> cellIdx
+      history: [],
+      submitted: false,
+      seconds: 0,
+    };
+
+    homeScreen.style.display = 'none';
+    caseScreen.style.display = 'block';
+    backBtn.style.display = 'inline-flex';
+
+    caseTitle.textContent = c.name;
+    renderGeneralClues();
+    renderSuspects();
+    renderBoard();
+    updateSubmitState();
+    resultBanner.className = 'result-banner';
+    resultBanner.textContent = '';
+
+    clearInterval(timerHandle);
+    active.seconds = 0;
+    caseTimer.textContent = '0:00';
+    timerHandle = setInterval(() => {
+      active.seconds++;
+      const m = Math.floor(active.seconds / 60);
+      const s = String(active.seconds % 60).padStart(2, '0');
+      caseTimer.textContent = `${m}:${s}`;
+    }, 1000);
+  }
+
+  backBtn.addEventListener('click', () => {
+    clearInterval(timerHandle);
+    caseScreen.style.display = 'none';
+    homeScreen.style.display = 'block';
+    backBtn.style.display = 'none';
+    renderCaseGrid();
+  });
+
+  function renderGeneralClues() {
+    generalCluesEl.innerHTML = '';
+    if (!active.case.generalClues.length) return;
+    const h = document.createElement('h2');
+    h.textContent = 'Pistas generales';
+    generalCluesEl.appendChild(h);
+    active.case.generalClues.forEach(txt => {
+      const div = document.createElement('div');
+      div.className = 'general-clue';
+      div.textContent = txt;
+      generalCluesEl.appendChild(div);
+    });
+  }
+
+  function renderSuspects() {
+    suspectsListEl.innerHTML = '';
+    active.case.suspects.forEach(sus => {
+      const card = document.createElement('div');
+      card.className = 'suspect-card';
+      card.dataset.id = sus.id;
+      if (active.selectedSuspect === sus.id) card.classList.add('selected');
+
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.style.background = sus.color;
+      avatar.textContent = sus.initial;
+
+      const body = document.createElement('div');
+      body.className = 'sc-body';
+      body.innerHTML = `
+        <div class="sc-name-row">
+          <span class="sc-name">${sus.name}</span>
+          <span class="sc-gender">${sus.g === 'f' ? '♀' : '♂'}</span>
+        </div>
+        <div class="sc-clues">${sus.clues.map(c => `<span>${c}</span>`).join('')}</div>
+      `;
+
+      card.appendChild(avatar);
+      card.appendChild(body);
+      card.addEventListener('click', () => selectSuspect(sus.id));
+      suspectsListEl.appendChild(card);
+    });
+  }
+
+  function selectSuspect(id) {
+    if (active.submitted) return;
+    active.selectedSuspect = active.selectedSuspect === id ? null : id;
+    active.eraseMode = false;
+    eraseBtn.classList.remove('active');
+    renderSuspects();
+  }
+
+  deselectBtn.addEventListener('click', () => {
+    active.selectedSuspect = null;
+    active.eraseMode = false;
+    eraseBtn.classList.remove('active');
+    renderSuspects();
+  });
+
+  eraseBtn.addEventListener('click', () => {
+    active.eraseMode = !active.eraseMode;
+    eraseBtn.classList.toggle('active', active.eraseMode);
+  });
+
+  clearAllBtn.addEventListener('click', () => {
+    pushHistory();
+    active.notes.clear();
+    active.placements.clear();
+    renderBoard();
+    updateSubmitState();
+  });
+
+  /* ------------------------------ HISTORIAL ------------------------------ */
+  function pushHistory() {
+    active.history.push({
+      notes: new Map([...active.notes].map(([k, v]) => [k, new Set(v)])),
+      placements: new Map(active.placements),
+    });
+    if (active.history.length > 40) active.history.shift();
+  }
+  undoBtn.addEventListener('click', () => {
+    const prev = active.history.pop();
+    if (!prev) return;
+    active.notes = prev.notes;
+    active.placements = prev.placements;
+    renderBoard();
+    updateSubmitState();
+  });
+
+  /* -------------------------------- TABLERO ------------------------------- */
+  const HOLD_MS = 480;
+
+  function renderBoard() {
+    const c = active.case;
+    boardEl.innerHTML = '';
+    boardEl.style.gridTemplateColumns = `repeat(${c.size}, minmax(30px, 54px))`;
+    boardEl.style.gridTemplateRows = `repeat(${c.size}, minmax(30px, 54px))`;
+
+    c.grid.forEach((cellData, idx) => {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.idx = idx;
+      cell.style.background = cellData.color;
+
+      if (cellData.object) {
+        const em = document.createElement('span');
+        em.className = 'obj-emoji';
+        em.textContent = cellData.object.emoji;
+        cell.appendChild(em);
+      }
+      if (cellData.labelCell) {
+        const lb = document.createElement('span');
+        lb.className = 'zone-label';
+        lb.textContent = cellData.zoneName;
+        cell.appendChild(lb);
+      }
+
+      // notas (marcas sueltas)
+      const noteSet = active.notes.get(idx);
+      if (noteSet && noteSet.size) {
+        const notesWrap = document.createElement('div');
+        notesWrap.className = 'notes';
+        [...noteSet].forEach(susId => {
+          const sus = c.suspects.find(s => s.id === susId);
+          const chip = document.createElement('div');
+          chip.className = 'note-chip';
+          chip.style.background = sus.color;
+          chip.textContent = sus.initial;
+          notesWrap.appendChild(chip);
+        });
+        cell.appendChild(notesWrap);
+      }
+
+      // colocación firme
+      const placedSusId = [...active.placements.entries()].find(([, ci]) => ci === idx)?.[0];
+      if (placedSusId) {
+        const sus = c.suspects.find(s => s.id === placedSusId);
+        const av = document.createElement('div');
+        av.className = 'placed-avatar';
+        av.style.background = sus.color;
+        av.textContent = sus.initial;
+        cell.appendChild(av);
+        if (active.submitted) {
+          cell.classList.add(sus.cell === idx ? 'result-correct' : 'result-wrong');
+        }
+      }
+
+      const ring = document.createElement('div');
+      ring.className = 'press-ring';
+      cell.appendChild(ring);
+
+      attachCellInteraction(cell, idx);
+      boardEl.appendChild(cell);
+    });
+  }
+
+  function attachCellInteraction(cell, idx) {
+    let pressTimer = null;
+    let longFired = false;
+
+    const startPress = () => {
+      if (active.submitted) return;
+      longFired = false;
+      cell.classList.add('charging');
+      pressTimer = setTimeout(() => {
+        longFired = true;
+        cell.classList.remove('charging');
+        cell.classList.add('pressing');
+        setTimeout(() => cell.classList.remove('pressing'), 150);
+        handlePlace(idx);
+      }, HOLD_MS);
+    };
+    const cancelPress = () => {
+      clearTimeout(pressTimer);
+      cell.classList.remove('charging');
+    };
+    const endPress = () => {
+      clearTimeout(pressTimer);
+      cell.classList.remove('charging');
+      if (!longFired) handleShortClick(idx);
+    };
+
+    cell.addEventListener('pointerdown', e => { e.preventDefault(); startPress(); });
+    cell.addEventListener('pointerup', endPress);
+    cell.addEventListener('pointerleave', cancelPress);
+    cell.addEventListener('pointercancel', cancelPress);
+    cell.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  function handleShortClick(idx) {
+    if (active.submitted) return;
+
+    if (active.eraseMode) {
+      pushHistory();
+      if (active.selectedSuspect) {
+        // borra solo marcas/colocación del sospechoso elegido
+        const set = active.notes.get(idx);
+        if (set) { set.delete(active.selectedSuspect); if (!set.size) active.notes.delete(idx); }
+        if (active.placements.get(active.selectedSuspect) === idx) active.placements.delete(active.selectedSuspect);
+      } else {
+        active.notes.delete(idx);
+        for (const [susId, ci] of [...active.placements.entries()]) {
+          if (ci === idx) active.placements.delete(susId);
+        }
+      }
+      renderBoard();
+      updateSubmitState();
+      return;
+    }
+
+    if (!active.selectedSuspect) return; // nada que anotar sin sospechoso elegido
+
+    pushHistory();
+    let set = active.notes.get(idx);
+    if (!set) { set = new Set(); active.notes.set(idx, set); }
+    if (set.has(active.selectedSuspect)) {
+      set.delete(active.selectedSuspect);
+      if (!set.size) active.notes.delete(idx);
+    } else {
+      set.add(active.selectedSuspect);
+    }
+    renderBoard();
+  }
+
+  function handlePlace(idx) {
+    if (active.submitted) return;
+
+    if (active.eraseMode) {
+      // mantener presionado en modo borrador ya lo maneja clearAllBtn; aquí solo limpiamos la celda
+      pushHistory();
+      active.notes.delete(idx);
+      for (const [susId, ci] of [...active.placements.entries()]) {
+        if (ci === idx) active.placements.delete(susId);
+      }
+      renderBoard();
+      updateSubmitState();
+      return;
+    }
+
+    if (!active.selectedSuspect) return;
+
+    pushHistory();
+    const susId = active.selectedSuspect;
+    // libera si otro sospechoso ya estaba colocado en esa celda
+    for (const [otherId, ci] of [...active.placements.entries()]) {
+      if (ci === idx && otherId !== susId) active.placements.delete(otherId);
+    }
+    active.placements.set(susId, idx);
+    // ya no hace falta la marca suelta de este sospechoso en ninguna celda
+    for (const [, set] of active.notes) {
+      set.delete(susId);
+    }
+    for (const [ci, set] of [...active.notes.entries()]) {
+      if (!set.size) active.notes.delete(ci);
+    }
+
+    renderBoard();
+    updateSubmitState();
+  }
+
+  function updateSubmitState() {
+    const c = active.case;
+    const allPlaced = c.suspects.every(s => active.placements.has(s.id));
+    submitBtn.textContent = allPlaced ? 'Enviar' : `Enviar (${active.placements.size}/${c.suspects.length} colocados)`;
+  }
+
+  submitBtn.addEventListener('click', () => {
+    const c = active.case;
+    const allPlaced = c.suspects.every(s => active.placements.has(s.id));
+    if (!allPlaced) {
+      lockedModal.classList.add('show');
+      return;
+    }
+    active.submitted = true;
+    let correct = 0;
+    c.suspects.forEach(s => {
+      if (active.placements.get(s.id) === s.cell) correct++;
+    });
+    renderBoard();
+    renderSuspectsResult();
+
+    if (correct === c.suspects.length) {
+      resultBanner.className = 'result-banner win show';
+      resultBanner.textContent = `¡Caso resuelto! Los ${correct} sospechosos están en su lugar.`;
+      solvedIds.add(c.id);
+    } else {
+      resultBanner.className = 'result-banner lose show';
+      resultBanner.textContent = `${correct} de ${c.suspects.length} correctos. Revisá los marcados en rojo y volvé a intentar.`;
+      active.submitted = false; // permite seguir corrigiendo
+    }
+  });
+
+  function renderSuspectsResult() {
+    const c = active.case;
+    [...suspectsListEl.children].forEach(card => {
+      const susId = card.dataset.id;
+      const sus = c.suspects.find(s => s.id === susId);
+      const ok = active.placements.get(susId) === sus.cell;
+      card.classList.remove('correct', 'wrong');
+      let statusEl = card.querySelector('.sc-status');
+      if (!statusEl) {
+        statusEl = document.createElement('span');
+        statusEl.className = 'sc-status';
+        card.appendChild(statusEl);
+      }
+      if (ok) { card.classList.add('correct'); statusEl.textContent = '✅'; }
+      else { card.classList.add('wrong'); statusEl.textContent = '❌'; }
+    });
+  }
+
+  lockedOk.addEventListener('click', () => lockedModal.classList.remove('show'));
+  lockedModal.addEventListener('click', e => { if (e.target === lockedModal) lockedModal.classList.remove('show'); });
+
+  /* ------------------------------- ARRANQUE ------------------------------- */
+  renderCaseGrid();
+})();
+
+</script>
+</body>
+</html>
