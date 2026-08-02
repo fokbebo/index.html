@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fútbol 11 Grid</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --bg:#070c18;
+  --bg-2:#0c1526;
+  --panel:#101b32;
+  --panel-2:#152341;
+  --border:#22314f;
+  --yellow:#ffc93c;
+  --cyan:#34d9e8;
+  --text:#f4f7fb;
+  --muted:#8393b8;
+  --success:#33d17a;
+  --danger:#ff5c6c;
+  --shadow: 0 10px 30px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family:'Inter',system-ui,sans-serif;
+  background:
+    radial-gradient(circle at 15% 0%, #0f1c38 0%, transparent 45%),
+    radial-gradient(circle at 90% 10%, #14213f 0%, transparent 40%),
+    var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  overflow-x:hidden;
+}
+
+.app{
+  width:100%;
+  max-width:440px;
+  min-height:100vh;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  padding:22px 18px 26px;
+}
+
+.screen{ display:none; flex-direction:column; flex:1; animation:fadeIn .35s ease; }
+.screen.active{ display:flex; }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+/* ---------- Brand / header ---------- */
+.brand{
+  text-align:center;
+  margin:10px 0 6px;
+}
+.brand .kicker{
+  display:block;
+  font-size:11px;
+  letter-spacing:.28em;
+  color:var(--cyan);
+  font-weight:700;
+  margin-bottom:6px;
+}
+.brand h1{
+  font-family:'Poppins',sans-serif;
+  font-weight:900;
+  font-size:34px;
+  line-height:1;
+  margin:0;
+  letter-spacing:-.5px;
+}
+.brand h1 .b1{color:var(--yellow);}
+.brand h1 .b2{color:var(--cyan);}
+.brand h1 .b3{color:#fff;}
+.brand .num{
+  display:inline-block;
+  background:var(--cyan);
+  color:#031018;
+  border-radius:6px;
+  padding:0 6px;
+  font-size:.62em;
+  vertical-align:middle;
+  transform:translateY(-4px);
+}
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:14px;
+  min-height:34px;
+}
+.iconbtn{
+  width:38px;height:38px;border-radius:12px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  color:var(--muted);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer; font-size:18px;
+  transition:.15s;
+}
+.iconbtn:hover{ color:var(--text); border-color:var(--cyan); }
+
+/* ---------- Buttons ---------- */
+.btn{
+  font-family:'Inter',sans-serif;
+  font-weight:700;
+  font-size:16px;
+  border:none;
+  border-radius:16px;
+  padding:16px 20px;
+  cursor:pointer;
+  transition:transform .12s ease, box-shadow .12s ease, opacity .12s;
+  width:100%;
+}
+.btn:active{ transform:scale(.97); }
+.btn-primary{
+  background:linear-gradient(135deg,var(--yellow),#ffb020);
+  color:#1a1200;
+  box-shadow:0 8px 22px rgba(255,201,60,.25);
+}
+.btn-outline{
+  background:transparent;
+  border:1.5px solid var(--border);
+  color:var(--text);
+}
+.btn-outline:hover{ border-color:var(--cyan); }
+.btn[disabled]{ opacity:.45; cursor:not-allowed; transform:none; }
+
+/* ---------- Home screen ---------- */
+#screen-home{ justify-content:center; align-items:center; text-align:center; gap:34px; flex:1; }
+.ball-orbit{
+  width:150px; height:150px; border-radius:50%;
+  border:2px dashed var(--border);
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+  margin-top:6px;
+}
+.ball-orbit::before{
+  content:'⚽';
+  font-size:58px;
+  filter:drop-shadow(0 6px 14px rgba(52,217,232,.35));
+  animation:spin 7s linear infinite;
+}
+@keyframes spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+.home-sub{ color:var(--muted); font-size:14.5px; max-width:280px; line-height:1.5; }
+.home-actions{ width:100%; max-width:280px; display:flex; flex-direction:column; gap:12px; }
+
+/* ---------- Mode select ---------- */
+.section-title{ font-family:'Poppins',sans-serif; font-weight:800; font-size:22px; margin:2px 0 4px; }
+.section-sub{ color:var(--muted); font-size:14px; margin-bottom:22px; }
+
+.mode-card{
+  background:linear-gradient(160deg,var(--panel-2),var(--panel));
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:20px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  cursor:pointer;
+  margin-bottom:14px;
+  transition:.15s;
+}
+.mode-card:hover{ border-color:var(--cyan); transform:translateY(-2px); }
+.mode-card.disabled{ opacity:.45; cursor:not-allowed; }
+.mode-card.disabled:hover{ transform:none; border-color:var(--border); }
+.mode-ico{
+  width:52px;height:52px;border-radius:14px;
+  background:rgba(52,217,232,.12);
+  display:grid; grid-template-columns:1fr 1fr 1fr; gap:3px;
+  padding:9px; flex-shrink:0;
+}
+.mode-ico span{ background:var(--cyan); border-radius:3px; opacity:.85;}
+.mode-card.disabled .mode-ico span{ background:var(--muted); }
+.mode-txt h3{ margin:0 0 3px; font-size:17px; font-family:'Poppins',sans-serif; font-weight:700;}
+.mode-txt p{ margin:0; font-size:13px; color:var(--muted); }
+.tag-soon{
+  margin-left:auto; font-size:10px; letter-spacing:.06em; color:var(--muted);
+  border:1px solid var(--border); padding:3px 8px; border-radius:20px; white-space:nowrap;
+}
+
+/* ---------- Timer select ---------- */
+.timer-options{ display:flex; flex-direction:column; gap:12px; margin-bottom:auto; }
+.timer-opt{
+  background:var(--panel);
+  border:1.5px solid var(--border);
+  border-radius:16px;
+  padding:18px 20px;
+  display:flex; align-items:center; justify-content:space-between;
+  cursor:pointer; transition:.15s;
+}
+.timer-opt:hover{ border-color:var(--cyan); }
+.timer-opt .t-main{ font-family:'Poppins',sans-serif; font-weight:800; font-size:19px; }
+.timer-opt .t-sub{ color:var(--muted); font-size:12.5px; margin-top:2px; }
+.timer-opt .t-ico{ font-size:22px; }
+
+/* ---------- Game screen ---------- */
+.game-top{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px;
+}
+.timer-pill{
+  display:flex; align-items:center; gap:8px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  padding:9px 16px;
+  border-radius:30px;
+  font-family:'Poppins',sans-serif;
+  font-weight:800;
+  font-size:16px;
+  min-width:92px;
+  justify-content:center;
+}
+.timer-pill.warn{ color:var(--danger); border-color:var(--danger); animation:pulse 1s infinite; }
+@keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.55} }
+.progress-pill{
+  background:var(--panel); border:1px solid var(--border); border-radius:30px;
+  padding:9px 14px; font-size:13px; color:var(--muted); font-weight:600;
+}
+.progress-pill b{ color:var(--text); }
+
+.flag-btn{
+  width:42px;height:42px;border-radius:12px;
+  background:var(--panel); border:1.5px solid var(--yellow);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:18px; color:var(--yellow);
+  transition:.15s;
+}
+.flag-btn:hover{ background:rgba(255,201,60,.12); }
+
+/* grid */
+.grid-wrap{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:10px;
+  box-shadow:var(--shadow);
+}
+.grid4{
+  display:grid;
+  grid-template-columns:64px repeat(3,1fr);
+  gap:7px;
+}
+.corner{
+  border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 30% 20%, #1a2848, #0b1224);
+  border:1px solid var(--border);
+}
+.corner span{ font-size:22px; }
+
+.crest-cell{
+  border-radius:12px;
+  padding:8px 4px 7px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:6px;
+  border:1px solid var(--border);
+  background:var(--panel-2);
+  min-height:64px;
+}
+.shield-wrap{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+.crest-stars{
+  font-size:6px; letter-spacing:1px; color:#ffd85c;
+  text-shadow:0 0 4px rgba(255,216,92,.6);
+}
+.shield{
+  width:34px;height:34px;
+  clip-path: polygon(50% 0%, 100% 15%, 100% 60%, 50% 100%, 0% 60%, 0% 15%);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Poppins',sans-serif; font-weight:800; font-size:11px;
+  color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.4);
+  flex-shrink:0;
+}
+.crit-shield{
+  clip-path:none;
+  border-radius:50%;
+  font-size:15px;
+}
+.row-crest .shield-wrap{ flex-direction:row; gap:6px; }
+.crest-cell .cname{
+  font-size:8.6px; font-weight:800; letter-spacing:.03em; color:var(--text);
+  text-align:center; line-height:1.15; text-transform:uppercase;
+}
+.row-crest{ flex-direction:row; justify-content:flex-start; padding:8px 6px; min-height:auto; gap:8px;}
+.row-crest .cname{ text-align:left; font-size:9px; }
+
+.cell{
+  aspect-ratio:1/1;
+  border-radius:12px;
+  border:1.5px solid var(--border);
+  background:#0b1428;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+  position:relative;
+  transition:.15s;
+  overflow:hidden;
+  padding:4px;
+}
+.cell:hover{ border-color:var(--cyan); }
+.cell.selected{ border-color:var(--cyan); box-shadow:0 0 0 3px rgba(52,217,232,.22); animation:selpulse 1.4s infinite; }
+@keyframes selpulse{ 0%,100%{box-shadow:0 0 0 3px rgba(52,217,232,.22)} 50%{box-shadow:0 0 0 6px rgba(52,217,232,.08)} }
+.cell.solved{ border-color:var(--success); background:rgba(51,209,122,.08); cursor:default; }
+.cell.shake{ animation:shake .35s; border-color:var(--danger); }
+@keyframes shake{ 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+.cell .plus{ font-size:20px; color:var(--border); }
+.cell.selected .plus{ color:var(--cyan); }
+.cell .pname{
+  font-size:10.5px; font-weight:800; text-align:center; color:var(--success);
+  line-height:1.2; padding:2px;
+}
+.cell .check{ position:absolute; top:4px; right:5px; font-size:11px; color:var(--success); }
+
+.helper{
+  text-align:center; color:var(--muted); font-size:12.5px; margin:12px 0 4px; min-height:16px;
+}
+.helper.err{ color:var(--danger); font-weight:700; }
+.helper.ok{ color:var(--success); font-weight:700; }
+
+/* input & autocomplete */
+.input-area{ margin-top:auto; padding-top:14px; position:relative; }
+.input-row{
+  display:flex; align-items:center; gap:10px;
+  background:var(--panel);
+  border:1.5px solid var(--border);
+  border-radius:16px;
+  padding:6px 6px 6px 16px;
+}
+.input-row.disabled{ opacity:.5; }
+.input-row input{
+  flex:1; background:transparent; border:none; outline:none;
+  color:var(--text); font-size:15px; font-family:'Inter',sans-serif; font-weight:600;
+  padding:10px 0;
+}
+.input-row input::placeholder{ color:var(--muted); font-weight:500; }
+.send-btn{
+  width:40px;height:40px;border-radius:11px;
+  background:var(--cyan); color:#03222a; border:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px; cursor:pointer; flex-shrink:0;
+}
+.send-btn[disabled]{ background:var(--border); color:var(--muted); }
+
+.suggest{
+  position:absolute;
+  bottom:calc(100% + 8px);
+  left:0; right:0;
+  background:var(--panel-2);
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+  max-height:210px;
+  overflow-y:auto;
+  display:none;
+  z-index:20;
+}
+.suggest.show{ display:block; }
+.suggest div{
+  padding:12px 16px; font-size:14px; font-weight:600;
+  cursor:pointer; border-bottom:1px solid var(--border);
+}
+.suggest div:last-child{ border-bottom:none; }
+.suggest div:hover, .suggest div.hi{ background:rgba(52,217,232,.14); color:var(--cyan); }
+
+/* ---------- Overlay ---------- */
+.overlay{
+  position:fixed; inset:0; background:rgba(3,7,16,.86);
+  backdrop-filter:blur(3px);
+  display:none; align-items:center; justify-content:center;
+  z-index:100; padding:20px;
+}
+.overlay.show{ display:flex; }
+.overlay-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:26px 22px;
+  max-width:400px; width:100%;
+  max-height:86vh; overflow-y:auto;
+  box-shadow:var(--shadow);
+  animation:popIn .28s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes popIn{ from{transform:scale(.9); opacity:0} to{transform:scale(1); opacity:1} }
+.overlay-card h2{
+  font-family:'Poppins',sans-serif; font-size:22px; margin:0 0 6px; text-align:center;
+}
+.overlay-card p.sub{ text-align:center; color:var(--muted); font-size:14px; margin:0 0 20px; }
+.result-stats{
+  display:flex; gap:10px; margin-bottom:18px;
+}
+.stat{
+  flex:1; background:var(--panel-2); border:1px solid var(--border); border-radius:14px;
+  padding:12px; text-align:center;
+}
+.stat b{ display:block; font-family:'Poppins',sans-serif; font-size:20px; color:var(--yellow); }
+.stat span{ font-size:11px; color:var(--muted); }
+
+.reveal-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:18px; }
+.reveal-row{
+  background:var(--panel-2); border:1px solid var(--border); border-radius:12px;
+  padding:10px 12px; font-size:12.5px;
+}
+.reveal-row .rr-heads{ display:flex; justify-content:space-between; color:var(--muted); font-size:11px; margin-bottom:4px; font-weight:700; letter-spacing:.02em;}
+.reveal-row .rr-heads .ok{ color:var(--success); }
+.reveal-row .rr-ans{ color:var(--text); font-weight:600; line-height:1.4; }
+.overlay-actions{ display:flex; flex-direction:column; gap:10px; }
+
+.confirm-actions{ display:flex; gap:10px; }
+.confirm-actions .btn{ flex:1; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HOME -->
+  <section id="screen-home" class="screen active">
+    <a href="index.html" class="iconbtn" style="position:absolute; top:22px; left:18px;">←</a>
+    <div class="brand">
+      <span class="kicker">ADIVINÁ AL JUGADOR</span>
+      <h1><span class="b1">FUTBOL</span><span class="num">11</span><span class="b3"> GRID</span></h1>
+    </div>
+    <div class="ball-orbit"></div>
+    <p class="home-sub">Completá la grilla con futbolistas que jugaron en cada combinación de clubes. Grilla nueva cada 24&nbsp;hs.</p>
+    <div class="home-actions">
+      <button class="btn btn-primary" onclick="goTo('screen-modes')">▶ &nbsp;JUGAR</button>
+    </div>
+  </section>
+
+  <!-- MODES -->
+  <section id="screen-modes" class="screen">
+    <div class="topbar">
+      <div class="iconbtn" onclick="goTo('screen-home')">←</div>
+      <div class="iconbtn" style="opacity:0;pointer-events:none;">·</div>
+    </div>
+    <h2 class="section-title">Elegí un juego</h2>
+    <p class="section-sub">Nuevos desafíos todos los días.</p>
+
+    <div class="mode-card" onclick="goTo('screen-timer')">
+      <div class="mode-ico"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="mode-txt">
+        <h3>Grid Clásico</h3>
+        <p>3×3 clubes · elegí el tiempo</p>
+      </div>
+    </div>
+
+    <div class="mode-card disabled">
+      <div class="mode-ico"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="mode-txt">
+        <h3>Selecciones</h3>
+        <p>Próximamente</p>
+      </div>
+      <div class="tag-soon">PRONTO</div>
+    </div>
+  </section>
+
+  <!-- TIMER SELECT -->
+  <section id="screen-timer" class="screen">
+    <div class="topbar">
+      <div class="iconbtn" onclick="goTo('screen-modes')">←</div>
+      <div class="iconbtn" style="opacity:0;pointer-events:none;">·</div>
+    </div>
+    <h2 class="section-title">Elegí el tiempo</h2>
+    <p class="section-sub">Una vez elegido no se puede cambiar.</p>
+    <div class="timer-options">
+      <div class="timer-opt" onclick="startGame(60)">
+        <div>
+          <div class="t-main">60 segundos</div>
+          <div class="t-sub">Modo rápido</div>
+        </div>
+        <div class="t-ico">⚡</div>
+      </div>
+      <div class="timer-opt" onclick="startGame(90)">
+        <div>
+          <div class="t-main">90 segundos</div>
+          <div class="t-sub">Modo normal</div>
+        </div>
+        <div class="t-ico">⏱️</div>
+      </div>
+      <div class="timer-opt" onclick="startGame(0)">
+        <div>
+          <div class="t-main">Sin tiempo</div>
+          <div class="t-sub">Jugá tranquilo</div>
+        </div>
+        <div class="t-ico">∞</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="screen-game" class="screen">
+    <div class="game-top">
+      <div id="timerPill" class="timer-pill">⏱ --</div>
+      <div class="progress-pill"><b id="progressCount">0</b>/9</div>
+      <div class="flag-btn" title="Abandonar" onclick="askAbandon()">🏳️</div>
+    </div>
+
+    <div class="grid-wrap">
+      <div id="grid4" class="grid4"></div>
+    </div>
+
+    <div id="helper" class="helper">Tocá una casilla para empezar</div>
+
+    <div class="input-area">
+      <div id="suggest" class="suggest"></div>
+      <div id="inputRow" class="input-row disabled">
+        <input id="playerInput" type="text" placeholder="Escribí el nombre del futbolista" autocomplete="off" disabled>
+        <div id="sendBtn" class="send-btn" onclick="submitGuess()">➔</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Confirm abandon overlay -->
+<div id="overlayConfirm" class="overlay">
+  <div class="overlay-card">
+    <h2>¿Abandonar la partida?</h2>
+    <p class="sub">Vas a ver todos los jugadores válidos para cada casilla y no vas a poder seguir jugando esta grilla.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-outline" onclick="closeOverlay('overlayConfirm')">Seguir jugando</button>
+      <button class="btn btn-primary" onclick="confirmAbandon()">Abandonar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Result / reveal overlay -->
+<div id="overlayResult" class="overlay">
+  <div class="overlay-card">
+    <h2 id="resultTitle">¡Grid completo!</h2>
+    <p class="sub" id="resultSub">Buen trabajo</p>
+    <div class="result-stats">
+      <div class="stat"><b id="statSolved">0/9</b><span>ACERTADOS</span></div>
+      <div class="stat"><b id="statTime">0s</b><span>TIEMPO</span></div>
+    </div>
+    <div id="revealList" class="reveal-list"></div>
+    <div class="overlay-actions">
+      <button class="btn btn-primary" onclick="restartFlow()">Jugar de nuevo</button>
+      <button class="btn btn-outline" onclick="closeOverlay('overlayResult')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== CLUBES Y CATEGORÍAS ESPECIALES =====================
+   Escudos propios (estilizados, no son reproducciones exactas de los logos
+   oficiales) más dos categorías especiales que a veces reemplazan a un club. */
+const ITEMS = {
+  MU:  { type:"club", name:"Manchester United", short:"MAN UTD",  c1:"#DA291C", c2:"#FBE122", ini:"MU"  },
+  MC:  { type:"club", name:"Manchester City",   short:"MAN CITY", c1:"#6CABDD", c2:"#1C2C5B", ini:"MC"  },
+  LFC: { type:"club", name:"Liverpool",         short:"LIVERPOOL",c1:"#C8102E", c2:"#F6EB61", ini:"LFC" },
+  INT: { type:"club", name:"Inter de Milán",    short:"INTER",    c1:"#010E80", c2:"#111111", ini:"IN"  },
+  ACM: { type:"club", name:"AC Milan",          short:"AC MILAN", c1:"#FB090B", c2:"#111111", ini:"MI"  },
+  AGE35:   { type:"crit", name:"Más de 35 años",         short:"+35 YEARS",   c1:"#2b2f45", c2:"#c9d23f", ini:"⏳" },
+  VALUE35: { type:"crit", name:"Fichaje de más de 35M€", short:"+35 MILLION", c1:"#1c2b1c", c2:"#ffd85c", ini:"💰" },
+};
+const CLUB_IDS = Object.keys(ITEMS).filter(k=>ITEMS[k].type==="club");
+const CRIT_IDS = Object.keys(ITEMS).filter(k=>ITEMS[k].type==="crit");
+
+/* ===================== DATOS DE JUGADORES VERIFICADOS =====================
+   Clave = ids ordenados alfabéticamente y unidos con "-"
+   - club+club: jugó en ambos clubes en algún momento de su carrera
+   - club+AGE35: jugó partidos oficiales con ese club con 35 años o más
+   - club+VALUE35: ese club lo compró o lo vendió por más de 35 millones de €
+   - AGE35+VALUE35: jugador de 35+ que en su carrera tuvo un pase de +35M€ */
+function pairKey(a,b){ return [a,b].sort().join('-'); }
+
+const DATA = {
+  // club + club
+  "ACM-INT": ["Zlatan Ibrahimović","Ronaldo Nazário","Clarence Seedorf"],
+  "ACM-LFC": ["Alberto Aquilani"],
+  "ACM-MC":  ["Mario Balotelli","Robinho"],
+  "ACM-MU":  ["David Beckham","Zlatan Ibrahimović"],
+  "INT-LFC": ["Philippe Coutinho","Paul Ince"],
+  "INT-MC":  ["Mario Balotelli"],
+  "INT-MU":  ["Romelu Lukaku","Alexis Sánchez","Ashley Young"],
+  "LFC-MC":  ["Raheem Sterling","Robbie Fowler"],
+  "LFC-MU":  ["Michael Owen","Paul Ince","Phil Chisnall"],
+  "MC-MU":   ["Carlos Tevez","Owen Hargreaves","Peter Barnes","Terry Cooke"],
+
+  // club + "más de 35 años"
+  "AGE35-MU":  ["Ryan Giggs","Paul Scholes","Edwin van der Sar","Zlatan Ibrahimović","Cristiano Ronaldo"],
+  "AGE35-MC":  ["Fernandinho","Claudio Bravo"],
+  "AGE35-LFC": ["James Milner","Gary McAllister"],
+  "AGE35-INT": ["Javier Zanetti","Samir Handanović","Diego Milito"],
+  "ACM-AGE35": ["Paolo Maldini","Alessandro Costacurta","Filippo Inzaghi","Zlatan Ibrahimović"],
+
+  // club + "ficho o vendió por +35M€"
+  "MU-VALUE35":  ["Paul Pogba","Romelu Lukaku","Ángel Di María","Harry Maguire","Antony"],
+  "MC-VALUE35":  ["Jack Grealish","Rodri","Rúben Dias","Josko Gvardiol","Riyad Mahrez"],
+  "LFC-VALUE35": ["Virgil van Dijk","Darwin Núñez","Dominik Szoboszlai","Alisson Becker"],
+  "INT-VALUE35": ["Achraf Hakimi","Romelu Lukaku"],
+  "ACM-VALUE35": ["Ricardo Kaká","Andriy Shevchenko","Thiago Silva","Sandro Tonali"],
+
+  // "más de 35 años" + "ficho por +35M€"
+  "AGE35-VALUE35": ["Cristiano Ronaldo","Zlatan Ibrahimović"],
+};
+
+/* Pool de nombres para autocompletar (todos los jugadores conocidos) */
+const NAME_POOL = [...new Set(Object.values(DATA).flat())].sort();
+
+/* ===================== ROTACIÓN DIARIA (semilla por fecha) ===================== */
+function strHash(s){ let h=0; for(let i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0; } return Math.abs(h); }
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  }
+}
+function seededShuffle(arr, rng){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(rng()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function buildDailyGrid(){
+  const today = new Date();
+  const dateStr = today.getFullYear()+"-"+(today.getMonth()+1)+"-"+today.getDate();
+  // le sumamos un toque de aleatoriedad real (no solo la fecha) para que las
+  // categorías especiales no salgan siempre igual, tal como se pidió
+  const rng = mulberry32(strHash(dateStr) ^ Math.floor(Math.random()*1e9));
+
+  // Solo hay 5 clubes, así que la grilla 3x3 (6 casillas de encabezado)
+  // siempre necesita al menos 1 categoría especial. Al azar decidimos si
+  // entra 1 o las 2 (nunca hace falta que entren siempre las dos).
+  const wantsTwo = rng() < 0.4;
+  let critsUsed;
+  if(wantsTwo){
+    critsUsed = [...CRIT_IDS];
+  } else {
+    critsUsed = [CRIT_IDS[Math.floor(rng()*CRIT_IDS.length)]];
+  }
+
+  const clubsNeeded = 6 - critsUsed.length;
+  const shuffledClubs = seededShuffle(CLUB_IDS, rng);
+  const clubsUsed = shuffledClubs.slice(0, clubsNeeded);
+
+  const pool = seededShuffle([...clubsUsed, ...critsUsed], rng);
+  let rows = pool.slice(0,3);
+  let cols = pool.slice(3,6);
+
+  rows = seededShuffle(rows, rng);
+  cols = seededShuffle(cols, rng);
+
+  return { rows, cols, dateStr };
+}
+
+/* ===================== ESTADO ===================== */
+let STATE = null;
+let timerInterval = null;
+let selectedCell = null;
+let usedPlayers = new Set();
+let solvedCount = 0;
+let elapsed = 0;
+let gameOver = false;
+
+function normStr(s){
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+   .toLowerCase().replace(/[^a-z0-9\s]/g,'').replace(/\s+/g,' ').trim();
+}
+
+/* ===================== NAVEGACIÓN ===================== */
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function restartFlow(){
+  closeOverlay('overlayResult');
+  closeOverlay('overlayConfirm');
+  clearInterval(timerInterval);
+  goTo('screen-modes');
+}
+
+/* ===================== INICIO DE PARTIDA ===================== */
+function startGame(seconds){
+  STATE = buildDailyGrid();
+  usedPlayers = new Set();
+  solvedCount = 0;
+  elapsed = 0;
+  gameOver = false;
+  selectedCell = null;
+  STATE.mode = seconds; // 0 = sin tiempo
+  STATE.timeLeft = seconds;
+
+  renderGrid();
+  updateProgress();
+  updateHelper("Tocá una casilla para empezar");
+  document.getElementById('playerInput').value = "";
+  toggleInput(false);
+
+  goTo('screen-game');
+
+  clearInterval(timerInterval);
+  const pill = document.getElementById('timerPill');
+  pill.classList.remove('warn');
+
+  if(seconds === 0){
+    pill.innerHTML = "⏱ ∞";
+    timerInterval = setInterval(()=>{
+      elapsed++;
+    },1000);
+  } else {
+    pill.innerHTML = "⏱ " + formatTime(seconds);
+    timerInterval = setInterval(()=>{
+      STATE.timeLeft--;
+      elapsed++;
+      pill.innerHTML = "⏱ " + formatTime(STATE.timeLeft);
+      if(STATE.timeLeft <= 10) pill.classList.add('warn');
+      if(STATE.timeLeft <= 0){
+        clearInterval(timerInterval);
+        endGame(false, true);
+      }
+    },1000);
+  }
+}
+
+function formatTime(s){
+  const m = Math.floor(s/60), r = s%60;
+  return (m>0? m+":"+String(r).padStart(2,'0') : r+"s");
+}
+
+/* ===================== RENDER GRID ===================== */
+function renderGrid(){
+  const g = document.getElementById('grid4');
+  g.innerHTML = "";
+
+  // esquina
+  const corner = document.createElement('div');
+  corner.className = 'corner';
+  corner.innerHTML = '<span>⚽</span>';
+  g.appendChild(corner);
+
+  // encabezados columnas
+  STATE.cols.forEach(cid=>{
+    g.appendChild(makeCrest(cid,false));
+  });
+
+  // filas
+  STATE.rows.forEach((rid, ri)=>{
+    g.appendChild(makeCrest(rid,true));
+    STATE.cols.forEach((cid, ci)=>{
+      g.appendChild(makeCell(ri,ci,rid,cid));
+    });
+  });
+}
+
+function makeCrest(cid, isRow){
+  const it = ITEMS[cid];
+  const div = document.createElement('div');
+  div.className = 'crest-cell' + (isRow? ' row-crest':'');
+  const stars = (cid==='INT'||cid==='ACM') ? '<div class="crest-stars">★★★</div>' : '';
+  const badgeClass = it.type === 'crit' ? 'shield crit-shield' : 'shield';
+  div.innerHTML = `
+    <div class="shield-wrap">
+      ${stars}
+      <div class="${badgeClass}" style="background:radial-gradient(circle at 35% 25%, ${it.c1}, #05070d); border:2px solid ${it.c2}; box-shadow:inset 0 0 0 2px rgba(255,255,255,.06);">
+        <span style="color:${it.type==='crit' ? it.c2 : '#fff'}">${it.ini}</span>
+      </div>
+    </div>
+    <div class="cname">${it.short}</div>`;
+  return div;
+}
+
+function makeCell(ri,ci,rid,cid){
+  const div = document.createElement('div');
+  div.className = 'cell';
+  div.id = `cell-${ri}-${ci}`;
+  div.innerHTML = '<span class="plus">+</span>';
+  div.onclick = ()=> selectCell(ri,ci,rid,cid,div);
+  return div;
+}
+
+/* ===================== SELECCIÓN DE CASILLA ===================== */
+function selectCell(ri,ci,rid,cid,div){
+  if(gameOver) return;
+  if(div.classList.contains('solved')) return;
+
+  document.querySelectorAll('.cell.selected').forEach(c=>c.classList.remove('selected'));
+  div.classList.add('selected');
+  selectedCell = {ri,ci,rid,cid,el:div};
+
+  toggleInput(true);
+  const club1 = ITEMS[rid].short, club2 = ITEMS[cid].short;
+  updateHelper(`¿Quién jugó en ${club1} y en ${club2}?`);
+  const input = document.getElementById('playerInput');
+  input.value = "";
+  input.focus();
+  hideSuggest();
+}
+
+function toggleInput(enabled){
+  const row = document.getElementById('inputRow');
+  const input = document.getElementById('playerInput');
+  const send = document.getElementById('sendBtn');
+  input.disabled = !enabled;
+  send.disabled = !enabled;
+  row.classList.toggle('disabled', !enabled);
+}
+
+function updateHelper(msg, cls){
+  const h = document.getElementById('helper');
+  h.textContent = msg;
+  h.className = 'helper' + (cls? ' '+cls : '');
+}
+
+function updateProgress(){
+  document.getElementById('progressCount').textContent = solvedCount;
+}
+
+/* ===================== AUTOCOMPLETAR ===================== */
+const input = document.getElementById('playerInput');
+input.addEventListener('input', ()=>{
+  const v = input.value.trim();
+  if(v.length < 2){ hideSuggest(); return; }
+  const nv = normStr(v);
+  const matches = NAME_POOL.filter(n => !usedPlayers.has(n) && normStr(n).includes(nv)).slice(0,6);
+  showSuggest(matches);
+});
+input.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){ submitGuess(); }
+});
+
+function showSuggest(list){
+  const box = document.getElementById('suggest');
+  if(list.length === 0){ hideSuggest(); return; }
+  box.innerHTML = list.map(n=>`<div onclick="pickSuggest('${n.replace(/'/g,"\\'")}')">${n}</div>`).join('');
+  box.classList.add('show');
+}
+function hideSuggest(){
+  document.getElementById('suggest').classList.remove('show');
+}
+function pickSuggest(name){
+  input.value = name;
+  hideSuggest();
+  submitGuess();
+}
+
+/* ===================== VALIDAR RESPUESTA ===================== */
+function submitGuess(){
+  if(gameOver) return;
+  if(!selectedCell){ updateHelper("Tocá una casilla primero", "err"); return; }
+  const raw = input.value.trim();
+  if(!raw) return;
+  const nv = normStr(raw);
+
+  if([...usedPlayers].some(p => normStr(p) === nv)){
+    updateHelper("Ese jugador ya fue usado en otra casilla", "err");
+    flashCell(selectedCell.el, false);
+    return;
+  }
+
+  const key = pairKey(selectedCell.rid, selectedCell.cid);
+  const validList = DATA[key] || [];
+  const found = validList.find(p => normStr(p) === nv);
+
+  if(found){
+    solveCell(selectedCell, found);
+  } else {
+    updateHelper("No es correcto, ¡probá de nuevo!", "err");
+    flashCell(selectedCell.el, false);
+  }
+  hideSuggest();
+}
+
+function flashCell(el, ok){
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  if(!ok) el.classList.add('shake');
+}
+
+function solveCell(cellInfo, playerName){
+  usedPlayers.add(playerName);
+  solvedCount++;
+  updateProgress();
+
+  const el = cellInfo.el;
+  el.classList.remove('selected');
+  el.classList.add('solved');
+  el.innerHTML = `<span class="check">✔</span><span class="pname">${playerName}</span>`;
+
+  const club = ITEMS[cellInfo.rid];
+  el.style.background = `linear-gradient(160deg, rgba(51,209,122,.14), rgba(255,255,255,.02))`;
+
+  selectedCell = null;
+  toggleInput(false);
+  input.value = "";
+  updateHelper(`¡Correcto! ${playerName}`, "ok");
+
+  if(solvedCount >= 9){
+    clearInterval(timerInterval);
+    setTimeout(()=> endGame(true,false), 400);
+  }
+}
+
+/* ===================== ABANDONAR ===================== */
+function askAbandon(){
+  if(gameOver) return;
+  document.getElementById('overlayConfirm').classList.add('show');
+}
+function closeOverlay(id){
+  document.getElementById(id).classList.remove('show');
+}
+function confirmAbandon(){
+  closeOverlay('overlayConfirm');
+  clearInterval(timerInterval);
+  endGame(false, false, true);
+}
+
+/* ===================== FIN DE PARTIDA ===================== */
+function endGame(won, timeUp, abandoned){
+  gameOver = true;
+  toggleInput(false);
+  hideSuggest();
+  document.querySelectorAll('.cell.selected').forEach(c=>c.classList.remove('selected'));
+
+  const title = document.getElementById('resultTitle');
+  const sub = document.getElementById('resultSub');
+
+  if(won){
+    title.textContent = "¡Grid completo! 🏆";
+    sub.textContent = "Conocés bien el mercado de pases.";
+  } else if(timeUp){
+    title.textContent = "¡Se acabó el tiempo! ⏱️";
+    sub.textContent = "Estas eran las respuestas posibles.";
+  } else if(abandoned){
+    title.textContent = "Partida abandonada 🏳️";
+    sub.textContent = "Estas eran las respuestas posibles.";
+  }
+
+  document.getElementById('statSolved').textContent = solvedCount + "/9";
+  document.getElementById('statTime').textContent = formatTime(elapsed);
+
+  const revealBox = document.getElementById('revealList');
+  revealBox.innerHTML = "";
+
+  STATE.rows.forEach((rid,ri)=>{
+    STATE.cols.forEach((cid,ci)=>{
+      const cellEl = document.getElementById(`cell-${ri}-${ci}`);
+      const wasSolved = cellEl.classList.contains('solved');
+      const key = pairKey(rid,cid);
+      const answers = (DATA[key]||[]).join(', ');
+      const row = document.createElement('div');
+      row.className = 'reveal-row';
+      row.innerHTML = `
+        <div class="rr-heads">
+          <span>${ITEMS[rid].short} + ${ITEMS[cid].short}</span>
+          <span class="${wasSolved?'ok':''}">${wasSolved? '✔ ACERTADO' : ''}</span>
+        </div>
+        <div class="rr-ans">${answers}</div>`;
+      revealBox.appendChild(row);
+    });
+  });
+
+  document.getElementById('overlayResult').classList.add('show');
+}
+</script>
+</body>
+</html>
