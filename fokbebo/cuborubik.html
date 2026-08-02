@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cubo Mágico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0d0f13;
+    --panel: #15181f;
+    --panel-2: #1b1f28;
+    --line: #2a2f3a;
+    --text: #eef0f3;
+    --muted: #8a90a0;
+    --c-red: #c8102e;
+    --c-orange: #ff7a1a;
+    --c-white: #f2f3f5;
+    --c-yellow: #ffd60a;
+    --c-green: #10a153;
+    --c-blue: #1257c4;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background: radial-gradient(1200px 800px at 50% -10%, #171b24 0%, var(--bg) 55%);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    overflow:hidden;
+  }
+  h1,h2,h3, .display{
+    font-family:'Space Grotesk', sans-serif;
+  }
+
+  /* ---------- MENU ---------- */
+  #menu{
+    height:100%;
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .menu-inner{ max-width:1000px; width:100%; text-align:center; }
+  .eyebrow{
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:10px;
+    font-weight:600;
+  }
+  .title{
+    font-size:clamp(32px,5vw,52px);
+    font-weight:700;
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    color:var(--muted);
+    font-size:16px;
+    margin:0 0 44px;
+  }
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:20px;
+  }
+  @media (max-width:760px){ .cards{ grid-template-columns:1fr; } }
+
+  .card{
+    background:linear-gradient(180deg, var(--panel-2), var(--panel));
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:26px 20px 22px;
+    cursor:pointer;
+    transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    position:relative;
+    overflow:hidden;
+  }
+  .card::before{
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background:var(--accent);
+  }
+  .card:hover{
+    transform:translateY(-4px);
+    border-color:var(--accent);
+    box-shadow:0 16px 40px -20px var(--accent);
+  }
+  .card:focus-visible{ outline:2px solid var(--accent); outline-offset:3px; }
+
+  .stage{
+    height:120px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    perspective:600px;
+    margin-bottom:18px;
+  }
+  .mini{
+    position:relative;
+    width:64px; height:64px;
+    transform-style:preserve-3d;
+    animation:spin 9s linear infinite;
+  }
+  @keyframes spin{
+    from{ transform:rotateX(-22deg) rotateY(0deg); }
+    to{ transform:rotateX(-22deg) rotateY(360deg); }
+  }
+  .mini .f{
+    position:absolute; width:64px; height:64px;
+    background-image:
+      linear-gradient(to right, rgba(0,0,0,.55) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0,0,0,.55) 1px, transparent 1px);
+    background-size: calc(100% / var(--n)) calc(100% / var(--n));
+    border:1px solid rgba(0,0,0,.6);
+    border-radius:4px;
+  }
+  .f.pz{ background-color:var(--c-green);  transform:translateZ(32px); }
+  .f.nz{ background-color:var(--c-blue);   transform:rotateY(180deg) translateZ(32px); }
+  .f.px{ background-color:var(--c-red);    transform:rotateY(90deg) translateZ(32px); }
+  .f.nx{ background-color:var(--c-orange); transform:rotateY(-90deg) translateZ(32px); }
+  .f.py{ background-color:var(--c-white);  transform:rotateX(90deg) translateZ(32px); }
+  .f.ny{ background-color:var(--c-yellow); transform:rotateX(-90deg) translateZ(32px); }
+
+  .card h3{ margin:0 0 4px; font-size:22px; }
+  .card p{ margin:0; color:var(--muted); font-size:13px; }
+
+  /* ---------- GAME ---------- */
+  #game{
+    height:100%; width:100%;
+    display:flex;
+    flex-direction:column;
+  }
+  #game[hidden]{ display:none; }
+  #hud{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:14px 20px;
+    border-bottom:1px solid var(--line);
+    background:rgba(21,24,31,.7);
+    backdrop-filter:blur(6px);
+    z-index:5;
+  }
+  .hud-left{ display:flex; align-items:center; gap:12px; }
+  .badge{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    padding:6px 12px;
+    border-radius:999px;
+  }
+  .hud-right{ display:flex; gap:10px; }
+  button.ctrl{
+    font-family:'Inter', sans-serif;
+    font-weight:600;
+    font-size:13px;
+    background:var(--panel-2);
+    color:var(--text);
+    border:1px solid var(--line);
+    padding:9px 16px;
+    border-radius:10px;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  button.ctrl:hover{ border-color:#454c5c; background:#20242e; }
+  button.ctrl.primary{
+    background:#1a3a2a;
+    border-color:#20583d;
+    color:#8ff0bd;
+  }
+  button.ctrl.primary:hover{ background:#1f4632; }
+
+  #canvas-wrap{ position:relative; flex:1; min-height:0; }
+  #canvas-wrap canvas{ display:block; width:100%; height:100%; touch-action:none; }
+
+  #hint{
+    position:absolute;
+    left:50%; bottom:18px;
+    transform:translateX(-50%);
+    font-size:12px;
+    color:var(--muted);
+    background:rgba(21,24,31,.75);
+    border:1px solid var(--line);
+    padding:8px 14px;
+    border-radius:999px;
+    pointer-events:none;
+    text-align:center;
+    white-space:nowrap;
+  }
+  @media (max-width:640px){
+    #hint{ white-space:normal; width:86%; }
+  }
+
+  button.ctrl.small{ padding:7px 12px; font-size:12px; border-radius:8px; }
+  button.ctrl:disabled{ opacity:.4; cursor:not-allowed; }
+
+  #solvePanel{
+    position:absolute;
+    left:50%; bottom:18px;
+    transform:translateX(-50%);
+    width:min(92%, 420px);
+    background:rgba(21,24,31,.92);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 16px;
+    backdrop-filter:blur(8px);
+    box-shadow:0 20px 50px -20px rgba(0,0,0,.6);
+  }
+  .solve-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .solve-label{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:600;
+    font-size:14px;
+  }
+  .solve-bar{
+    height:6px;
+    border-radius:999px;
+    background:var(--panel-2);
+    overflow:hidden;
+    margin-bottom:12px;
+  }
+  .solve-bar-fill{
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg, var(--c-green), var(--c-blue));
+    transition:width .25s ease;
+  }
+  .solve-controls{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+  }
+  .solve-controls .ctrl{ flex:1; }
+</style>
+</head>
+<body>
+
+  <div id="menu">
+    <div class="menu-inner">
+      <div class="eyebrow">Elegí tu cubo</div>
+      <h1 class="title">Cubo Mágico</h1>
+      <p class="subtitle">Tocá y arrastrá cualquier cara para girarla. Cada tamaño se mezcla solo al entrar.</p>
+      <div class="cards">
+        <div class="card" tabindex="0" data-n="3" style="--accent:var(--c-red)">
+          <div class="stage"><div class="mini" style="--n:3">
+            <div class="f pz"></div><div class="f nz"></div><div class="f px"></div>
+            <div class="f nx"></div><div class="f py"></div><div class="f ny"></div>
+          </div></div>
+          <h3>3×3</h3>
+          <p>27 piezas · el clásico</p>
+        </div>
+        <div class="card" tabindex="0" data-n="6" style="--accent:var(--c-green)">
+          <div class="stage"><div class="mini" style="--n:6">
+            <div class="f pz"></div><div class="f nz"></div><div class="f px"></div>
+            <div class="f nx"></div><div class="f py"></div><div class="f ny"></div>
+          </div></div>
+          <h3>6×6</h3>
+          <p>216 piezas · más capas para girar</p>
+        </div>
+        <div class="card" tabindex="0" data-n="12" style="--accent:var(--c-blue)">
+          <div class="stage"><div class="mini" style="--n:12">
+            <div class="f pz"></div><div class="f nz"></div><div class="f px"></div>
+            <div class="f nx"></div><div class="f py"></div><div class="f ny"></div>
+          </div></div>
+          <h3>12×12</h3>
+          <p>1728 piezas · el desafío grande</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="game" hidden>
+    <div id="hud">
+      <div class="hud-left">
+        <span class="badge" id="sizeBadge">3×3</span>
+      </div>
+      <div class="hud-right">
+        <button class="ctrl" id="btnBack">← Menú</button>
+        <button class="ctrl" id="btnReset">Reiniciar</button>
+        <button class="ctrl" id="btnSolve">🧩 Resolver paso a paso</button>
+        <button class="ctrl primary" id="btnScramble">🔀 Mezclar</button>
+      </div>
+    </div>
+    <div id="canvas-wrap">
+      <div id="hint">Arrastrá una cara para girarla · arrastrá el fondo para rotar la vista · rueda para zoom</div>
+      <div id="solvePanel" hidden>
+        <div class="solve-row">
+          <span class="solve-label" id="solveLabel">Paso 0 / 0</span>
+          <button class="ctrl small" id="btnCloseSolve">✕ Cerrar</button>
+        </div>
+        <div class="solve-bar"><div class="solve-bar-fill" id="solveBarFill"></div></div>
+        <div class="solve-controls">
+          <button class="ctrl small" id="btnPrevStep">⏮ Anterior</button>
+          <button class="ctrl small primary" id="btnPlayStep">▶ Reproducir</button>
+          <button class="ctrl small" id="btnNextStep">Siguiente ⏭</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- Three.js setup ----------------
+  const canvasWrap = document.getElementById('canvas-wrap');
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+  const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  canvasWrap.appendChild(renderer.domElement);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.65));
+  const dl1 = new THREE.DirectionalLight(0xffffff, 0.65);
+  dl1.position.set(6, 10, 8);
+  scene.add(dl1);
+  const dl2 = new THREE.DirectionalLight(0xffffff, 0.35);
+  dl2.position.set(-8, -4, -6);
+  scene.add(dl2);
+
+  const rubikGroup = new THREE.Group();
+  scene.add(rubikGroup);
+
+  const COLORS = {
+    px: 0xc8102e, // rojo
+    nx: 0xff7a1a, // naranja
+    py: 0xf2f3f5, // blanco
+    ny: 0xffd60a, // amarillo
+    pz: 0x10a153, // verde
+    nz: 0x1257c4, // azul
+    core: 0x0c0d10
+  };
+
+  let N = 3;
+  let center = 1;
+  let cubies = []; // {mesh, x, y, z}
+  let isAnimating = false;
+  let moveQueue = [];
+  let gameVisible = false;
+  let moveLog = []; // historial de movimientos aplicados desde el cubo resuelto
+  let solveMode = false;
+  let solutionSteps = []; // movimientos que hay que aplicar para resolver, en orden
+  let origMoves = [];     // movimientos originales que cada paso deshace
+  let stepIndex = 0;
+  let autoplayTimer = null;
+  const sharedGeom = new THREE.BoxGeometry(0.92, 0.92, 0.92);
+
+  function disposeCube(){
+    for(const c of cubies){
+      rubikGroup.remove(c.mesh);
+      if(Array.isArray(c.mesh.material)){
+        c.mesh.material.forEach(m=>m.dispose());
+      }
+    }
+    cubies = [];
+  }
+
+  function buildCube(n){
+    disposeCube();
+    moveLog = [];
+    closeSolver();
+    N = n;
+    center = (n - 1) / 2;
+    for(let x=0;x<n;x++){
+      for(let y=0;y<n;y++){
+        for(let z=0;z<n;z++){
+          const onSurface = (x===0||x===n-1||y===0||y===n-1||z===0||z===n-1);
+          if(!onSurface) continue;
+          const mats = [
+            new THREE.MeshLambertMaterial({ color: x===n-1 ? COLORS.px : COLORS.core }),
+            new THREE.MeshLambertMaterial({ color: x===0   ? COLORS.nx : COLORS.core }),
+            new THREE.MeshLambertMaterial({ color: y===n-1 ? COLORS.py : COLORS.core }),
+            new THREE.MeshLambertMaterial({ color: y===0   ? COLORS.ny : COLORS.core }),
+            new THREE.MeshLambertMaterial({ color: z===n-1 ? COLORS.pz : COLORS.core }),
+            new THREE.MeshLambertMaterial({ color: z===0   ? COLORS.nz : COLORS.core }),
+          ];
+          const mesh = new THREE.Mesh(sharedGeom, mats);
+          mesh.position.set(x-center, y-center, z-center);
+          rubikGroup.add(mesh);
+          cubies.push({ mesh, x, y, z });
+        }
+      }
+    }
+    camState.radius = n * 1.55 + 4.2;
+    camState.theta = Math.PI/4;
+    camState.phi = Math.PI/3;
+    updateCamera();
+  }
+
+  // ---------------- Camera orbit ----------------
+  const camState = { theta: Math.PI/4, phi: Math.PI/3, radius: 9 };
+  function updateCamera(){
+    camera.position.x = camState.radius * Math.sin(camState.phi) * Math.sin(camState.theta);
+    camera.position.y = camState.radius * Math.cos(camState.phi);
+    camera.position.z = camState.radius * Math.sin(camState.phi) * Math.cos(camState.theta);
+    camera.lookAt(0,0,0);
+  }
+
+  function resize(){
+    const w = canvasWrap.clientWidth, h = canvasWrap.clientHeight;
+    if(w===0||h===0) return;
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
+  window.addEventListener('resize', resize);
+
+  // ---------------- Rotation logic ----------------
+  function roundToCardinal(v){
+    const ax=Math.abs(v.x), ay=Math.abs(v.y), az=Math.abs(v.z);
+    if(ax>=ay && ax>=az) return { axisName:'x', sign: v.x>=0?1:-1 };
+    if(ay>=ax && ay>=az) return { axisName:'y', sign: v.y>=0?1:-1 };
+    return { axisName:'z', sign: v.z>=0?1:-1 };
+  }
+
+  function snapTransform(mesh){
+    mesh.updateMatrix();
+    const m = mesh.matrix.elements.slice();
+    const rotIdx = [0,1,2,4,5,6,8,9,10];
+    rotIdx.forEach(i=>{ m[i] = Math.round(m[i]); });
+    mesh.matrix.fromArray(m);
+    mesh.matrix.decompose(mesh.position, mesh.quaternion, mesh.scale);
+  }
+
+  function requestMove(axisName, layerIndex, sign, animated){
+    moveQueue.push({ axisName, layerIndex, sign, animated });
+    if(!isAnimating) processQueue();
+  }
+
+  function processQueue(){
+    if(moveQueue.length === 0){ isAnimating = false; return; }
+    isAnimating = true;
+    const mv = moveQueue.shift();
+    animateRotation(mv.axisName, mv.layerIndex, mv.sign, mv.animated, processQueue);
+  }
+
+  function animateRotation(axisName, layerIndex, sign, animated, done){
+    const axisVector = new THREE.Vector3(
+      axisName==='x'?1:0, axisName==='y'?1:0, axisName==='z'?1:0
+    );
+    const targetAngle = sign * Math.PI/2;
+    const pivot = new THREE.Group();
+    rubikGroup.add(pivot);
+    const layerCubies = cubies.filter(c => c[axisName] === layerIndex);
+    layerCubies.forEach(c => pivot.attach(c.mesh));
+
+    const duration = animated ? 220 : 1;
+    const start = performance.now();
+
+    function finish(){
+      pivot.updateMatrixWorld(true);
+      layerCubies.forEach(c=>{
+        rubikGroup.attach(c.mesh);
+        const px = Math.round(c.mesh.position.x + center);
+        const py = Math.round(c.mesh.position.y + center);
+        const pz = Math.round(c.mesh.position.z + center);
+        c.x = px; c.y = py; c.z = pz;
+        c.mesh.position.set(px-center, py-center, pz-center);
+        snapTransform(c.mesh);
+      });
+      rubikGroup.remove(pivot);
+      done();
+    }
+
+    function frame(now){
+      const t = Math.min((now-start)/duration, 1);
+      const eased = 1 - Math.pow(1-t, 3);
+      pivot.rotation.set(0,0,0);
+      pivot.rotateOnAxis(axisVector, targetAngle*eased);
+      if(t < 1){ requestAnimationFrame(frame); } else { finish(); }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // Aplica un movimiento y lo registra en el historial (para poder deshacerlo luego)
+  function doMove(axisName, layerIndex, sign, animated){
+    moveLog.push({ axisName, layerIndex, sign });
+    requestMove(axisName, layerIndex, sign, animated);
+  }
+
+  function scrambleCube(){
+    if(solveMode) closeSolver();
+    const axes = ['x','y','z'];
+    const count = N===3 ? 22 : (N===6 ? 32 : 46);
+    for(let i=0;i<count;i++){
+      const axisName = axes[Math.floor(Math.random()*3)];
+      const layerIndex = Math.floor(Math.random()*N);
+      const sign = Math.random() < 0.5 ? 1 : -1;
+      doMove(axisName, layerIndex, sign, true);
+    }
+  }
+
+  // ---------------- Resolver paso a paso ----------------
+  // Idea: cada movimiento (del mezclador o hecho a mano) queda guardado en moveLog.
+  // Para "resolver" el cubo alcanza con aplicar el inverso de cada movimiento,
+  // empezando por el último. Esto funciona igual para 3x3, 6x6 y 12x12.
+  const solvePanel = document.getElementById('solvePanel');
+  const solveLabel = document.getElementById('solveLabel');
+  const solveBarFill = document.getElementById('solveBarFill');
+  const btnPrevStep = document.getElementById('btnPrevStep');
+  const btnNextStep = document.getElementById('btnNextStep');
+  const btnPlayStep = document.getElementById('btnPlayStep');
+  const hintEl = document.getElementById('hint');
+
+  function openSolver(){
+    if(hintEl) hintEl.style.display = 'none';
+    if(moveLog.length === 0){
+      solveLabel.textContent = '¡El cubo ya está resuelto!';
+      solvePanel.hidden = false;
+      solveBarFill.style.width = '100%';
+      btnPrevStep.disabled = true;
+      btnNextStep.disabled = true;
+      btnPlayStep.disabled = true;
+      solveMode = true;
+      return;
+    }
+    origMoves = moveLog.slice().reverse();
+    solutionSteps = origMoves.map(m => ({ axisName:m.axisName, layerIndex:m.layerIndex, sign:-m.sign }));
+    stepIndex = 0;
+    solveMode = true;
+    dragState = null;
+    solvePanel.hidden = false;
+    btnPlayStep.disabled = false;
+    updateStepUI();
+  }
+
+  function closeSolver(){
+    solveMode = false;
+    stopAutoplay();
+    if(solvePanel) solvePanel.hidden = true;
+    if(hintEl) hintEl.style.display = '';
+  }
+
+  function updateStepUI(){
+    const total = solutionSteps.length;
+    solveLabel.textContent = 'Paso ' + stepIndex + ' / ' + total;
+    solveBarFill.style.width = (total===0 ? 100 : (stepIndex/total*100)) + '%';
+    btnPrevStep.disabled = (stepIndex <= 0);
+    const finished = (stepIndex >= total);
+    btnNextStep.disabled = finished;
+    if(finished){
+      solveLabel.textContent = '¡Cubo resuelto! 🎉';
+      stopAutoplay();
+    }
+  }
+
+  function nextStep(){
+    if(stepIndex >= solutionSteps.length) return;
+    const step = solutionSteps[stepIndex];
+    requestMove(step.axisName, step.layerIndex, step.sign, true);
+    moveLog.pop();
+    stepIndex++;
+    updateStepUI();
+  }
+
+  function prevStep(){
+    if(stepIndex <= 0) return;
+    const orig = origMoves[stepIndex-1];
+    requestMove(orig.axisName, orig.layerIndex, orig.sign, true);
+    moveLog.push(orig);
+    stepIndex--;
+    updateStepUI();
+  }
+
+  function stopAutoplay(){
+    if(autoplayTimer){ clearInterval(autoplayTimer); autoplayTimer = null; }
+    btnPlayStep.textContent = '▶ Reproducir';
+  }
+
+  function toggleAutoplay(){
+    if(autoplayTimer){ stopAutoplay(); return; }
+    btnPlayStep.textContent = '⏸ Pausar';
+    autoplayTimer = setInterval(()=>{
+      if(stepIndex >= solutionSteps.length){ stopAutoplay(); return; }
+      nextStep();
+    }, 380);
+  }
+
+  document.getElementById('btnSolve').addEventListener('click', openSolver);
+  document.getElementById('btnCloseSolve').addEventListener('click', closeSolver);
+  btnNextStep.addEventListener('click', nextStep);
+  btnPrevStep.addEventListener('click', prevStep);
+  btnPlayStep.addEventListener('click', toggleAutoplay);
+
+  // ---------------- Pointer interaction ----------------
+  const raycaster = new THREE.Raycaster();
+  let dragState = null;
+
+  function ndcFromEvent(e){
+    const rect = renderer.domElement.getBoundingClientRect();
+    return new THREE.Vector2(
+      ((e.clientX-rect.left)/rect.width)*2 - 1,
+      -((e.clientY-rect.top)/rect.height)*2 + 1
+    );
+  }
+
+  function onPointerDown(e){
+    if(!gameVisible) return;
+    renderer.domElement.setPointerCapture(e.pointerId);
+    const ndc = ndcFromEvent(e);
+    raycaster.setFromCamera(ndc, camera);
+
+    if(!isAnimating && !solveMode){
+      const meshes = cubies.map(c=>c.mesh);
+      const hits = raycaster.intersectObjects(meshes);
+      if(hits.length > 0){
+        const hit = hits[0];
+        const worldNormal = hit.face.normal.clone().transformDirection(hit.object.matrixWorld).round();
+        const cubie = cubies.find(c=>c.mesh === hit.object);
+        const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(worldNormal, hit.point);
+        dragState = { mode:'face', worldNormal, plane, startPoint: hit.point.clone(), cubie, locked:false };
+        return;
+      }
+    }
+    dragState = { mode:'orbit', lastX:e.clientX, lastY:e.clientY };
+  }
+
+  function onPointerMove(e){
+    if(!dragState) return;
+
+    if(dragState.mode === 'orbit'){
+      const dx = e.clientX - dragState.lastX, dy = e.clientY - dragState.lastY;
+      dragState.lastX = e.clientX; dragState.lastY = e.clientY;
+      camState.theta -= dx * 0.0065;
+      camState.phi -= dy * 0.0065;
+      camState.phi = Math.max(0.18, Math.min(Math.PI-0.18, camState.phi));
+      updateCamera();
+      return;
+    }
+
+    if(dragState.mode === 'face' && !dragState.locked){
+      const ndc = ndcFromEvent(e);
+      raycaster.setFromCamera(ndc, camera);
+      const pt = new THREE.Vector3();
+      const hit = raycaster.ray.intersectPlane(dragState.plane, pt);
+      if(!hit) return;
+      const dragVec = pt.clone().sub(dragState.startPoint);
+      if(dragVec.length() > 0.32){
+        const axisRaw = dragState.worldNormal.clone().cross(dragVec).normalize();
+        const { axisName, sign } = roundToCardinal(axisRaw);
+        const layerIndex = dragState.cubie[axisName];
+        dragState.locked = true;
+        doMove(axisName, layerIndex, sign, true);
+      }
+    }
+  }
+
+  function onPointerUp(){ dragState = null; }
+
+  renderer.domElement.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', onPointerUp);
+
+  renderer.domElement.addEventListener('wheel', (e)=>{
+    if(!gameVisible) return;
+    e.preventDefault();
+    camState.radius += e.deltaY * 0.012 * (N * 0.12 + 1);
+    camState.radius = Math.max(3.5, Math.min(70, camState.radius));
+    updateCamera();
+  }, { passive:false });
+
+  // ---------------- Render loop ----------------
+  function loop(){
+    requestAnimationFrame(loop);
+    if(gameVisible){ renderer.render(scene, camera); }
+  }
+  loop();
+
+  // ---------------- UI wiring ----------------
+  const menuEl = document.getElementById('menu');
+  const gameEl = document.getElementById('game');
+  const sizeBadge = document.getElementById('sizeBadge');
+
+  function startGame(n){
+    menuEl.style.display = 'none';
+    gameEl.hidden = false;
+    gameVisible = true;
+    sizeBadge.textContent = n + '×' + n;
+    requestAnimationFrame(()=>{
+      resize();
+      buildCube(n);
+      moveQueue = [];
+      isAnimating = false;
+      scrambleCube();
+    });
+  }
+
+  document.querySelectorAll('.card').forEach(card=>{
+    const go = ()=> startGame(parseInt(card.dataset.n, 10));
+    card.addEventListener('click', go);
+    card.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') go(); });
+  });
+
+  document.getElementById('btnBack').addEventListener('click', ()=>{
+    gameVisible = false;
+    gameEl.hidden = true;
+    menuEl.style.display = 'flex';
+    moveQueue = [];
+    isAnimating = false;
+    dragState = null;
+    closeSolver();
+  });
+
+  document.getElementById('btnReset').addEventListener('click', ()=>{
+    moveQueue = [];
+    isAnimating = false;
+    buildCube(N);
+  });
+
+  document.getElementById('btnScramble').addEventListener('click', ()=>{
+    scrambleCube();
+  });
+
+})();
+</script>
+</body>
+</html>
