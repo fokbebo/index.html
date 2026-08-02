@@ -1,1 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Game Hub</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap');
 
+:root{
+  --bg:#070c18;
+  --panel:#101b32;
+  --panel-2:#152341;
+  --border:#22314f;
+  --yellow:#ffc93c;
+  --cyan:#34d9e8;
+  --text:#f4f7fb;
+  --muted:#8393b8;
+  --shadow: 0 10px 30px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family:'Inter',system-ui,sans-serif;
+  background:
+    radial-gradient(circle at 15% 0%, #0f1c38 0%, transparent 45%),
+    radial-gradient(circle at 90% 10%, #14213f 0%, transparent 40%),
+    var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+}
+.app{
+  width:100%;
+  max-width:460px;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  position:relative;
+}
+.screen{ display:none; width:100%; flex-direction:column; align-items:center; animation:fadeIn .35s ease; }
+.screen.active{ display:flex; }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+/* ---- home ---- */
+.brand{ text-align:center; margin-bottom:8px; }
+.brand .kicker{ display:block; font-size:11px; letter-spacing:.3em; color:var(--cyan); font-weight:700; margin-bottom:8px; }
+.brand h1{
+  font-family:'Poppins',sans-serif; font-weight:900; font-size:32px; margin:0; letter-spacing:-.5px;
+}
+.brand h1 .b1{color:var(--yellow);}
+.brand h1 .b2{color:#fff;}
+
+.ball-orbit{
+  width:140px; height:140px; border-radius:50%;
+  border:2px dashed var(--border);
+  display:flex; align-items:center; justify-content:center;
+  margin:22px 0;
+}
+.ball-orbit span{ font-size:56px; animation:spin 7s linear infinite; filter:drop-shadow(0 6px 14px rgba(52,217,232,.35)); }
+@keyframes spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+.home-sub{ color:var(--muted); font-size:14.5px; max-width:280px; text-align:center; line-height:1.5; margin-bottom:30px; }
+
+.play-btn{
+  font-family:'Inter',sans-serif; font-weight:800; font-size:18px;
+  background:linear-gradient(135deg,var(--yellow),#ffb020);
+  color:#1a1200; border:none; border-radius:18px;
+  padding:20px 52px; cursor:pointer;
+  box-shadow:0 10px 26px rgba(255,201,60,.28);
+  transition:transform .12s ease;
+}
+.play-btn:active{ transform:scale(.96); }
+
+/* ---- mode select ---- */
+.topbar{ width:100%; display:flex; margin-bottom:22px; }
+.iconbtn{
+  width:38px;height:38px;border-radius:12px; background:var(--panel); border:1px solid var(--border);
+  color:var(--muted); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px;
+}
+.iconbtn:hover{ color:var(--text); border-color:var(--cyan); }
+
+.section-title{ font-family:'Poppins',sans-serif; font-weight:800; font-size:22px; margin:0 0 4px; text-align:center; }
+.section-sub{ color:var(--muted); font-size:14px; margin-bottom:30px; text-align:center; }
+
+.options-row{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:center;
+  gap:20px;
+  width:100%;
+}
+.game-card{
+  flex:0 1 150px;
+  aspect-ratio: 3 / 4;
+  max-width:150px;
+  background:linear-gradient(160deg,var(--panel-2),var(--panel));
+  border:1.5px solid var(--border);
+  border-radius:22px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:14px;
+  text-decoration:none;
+  color:var(--text);
+  padding:16px 10px;
+  cursor:pointer;
+  transition:.15s;
+  box-shadow:var(--shadow);
+}
+.game-card:hover{ border-color:var(--cyan); transform:translateY(-4px); }
+.game-card:active{ transform:scale(.97); }
+.game-card .ico{
+  width:56px; height:56px; border-radius:16px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:28px;
+}
+.game-card .ico.grid{ background:rgba(52,217,232,.14); }
+.game-card .ico.cube{ background:rgba(255,201,60,.14); }
+.game-card .ico.muerdoku{ background:rgba(255,92,108,.14); overflow:hidden; }
+.game-card .ico.muerdoku img{ width:100%; height:100%; object-fit:cover; border-radius:16px; }
+.game-card h3{
+  margin:0; font-family:'Poppins',sans-serif; font-weight:700; font-size:14.5px; text-align:center; line-height:1.25;
+}
+.game-card p{ margin:0; font-size:11px; color:var(--muted); text-align:center; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HOME -->
+  <section id="screen-home" class="screen active">
+    <div class="brand">
+      <span class="kicker">GAME HUB</span>
+      <h1><span class="b1">JUGÁ</span><span class="b2"> ONLINE</span></h1>
+    </div>
+    <div class="ball-orbit"><span>🎮</span></div>
+    <p class="home-sub">Elegí un juego y arrancá cuando quieras, directo desde el navegador.</p>
+    <button class="play-btn" onclick="goTo('screen-modes')">▶ JUGAR</button>
+  </section>
+
+  <!-- MODE SELECT -->
+  <section id="screen-modes" class="screen">
+    <div class="topbar">
+      <div class="iconbtn" onclick="goTo('screen-home')">←</div>
+    </div>
+    <h2 class="section-title">Elegí un juego</h2>
+    <p class="section-sub">Cada uno te lleva a su propia pantalla.</p>
+
+    <div class="options-row">
+      <a class="game-card" href="futbol11grid.html">
+        <div class="ico grid">⚽</div>
+        <h3>Futbol11<br>Grid</h3>
+        <p>Grilla de fútbol</p>
+      </a>
+      <a class="game-card" href="cuborubik.html">
+        <div class="ico cube">🧊</div>
+        <h3>Cubo de<br>Rubik</h3>
+        <p>Armalo en 3D</p>
+      </a>
+      <a class="game-card" href="muerdoku.html">
+        <div class="ico muerdoku">🔪</div>
+        <h3>Murdoku</h3>
+        <p>Casos de misterio</p>
+      </a>
+    </div>
+  </section>
+
+</div>
+<script>
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>
